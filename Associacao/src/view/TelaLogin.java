@@ -27,13 +27,12 @@ public class TelaLogin extends JFrame {
     public TelaLogin() {
 
         setTitle("Sistema Quilombola");
-        setSize(1000,550);
+        setSize(1000, 550);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        // 🔥 ALTERAÇÕES PARA MAXIMIZAR A TELA
-        setResizable(true); // Permite que o usuário maximize e redimensione a janela
-        setExtendedState(JFrame.MAXIMIZED_BOTH); // Faz a tela iniciar automaticamente maximizada
+        // 🔥 MODIFICAÇÃO: Garante que a tela inicie maximizada preenchendo todo o monitor
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
 
         JPanel painelPrincipal = new JPanel(new BorderLayout());
 
@@ -42,14 +41,12 @@ public class TelaLogin extends JFrame {
         // =========================
 
         JPanel menuLateral = new JPanel();
-
-        // 🔥 AJUSTE RESIDENCIAL: Deixando a altura dinâmica para acompanhar o tamanho do monitor
         menuLateral.setPreferredSize(
-                new Dimension(280, getHeight())
+                new Dimension(280, 550)
         );
 
         menuLateral.setBackground(
-                new Color(35,18,4)
+                new Color(35, 18, 4)
         );
 
         // Borda lateral decorativa
@@ -64,7 +61,7 @@ public class TelaLogin extends JFrame {
 
 
         // LOGO
-        try{
+        try {
             ImageIcon logoOriginal =
                     new ImageIcon(
                             getClass().getResource("/imagens/logo.png")
@@ -80,7 +77,7 @@ public class TelaLogin extends JFrame {
 
             menuLateral.add(logo);
 
-        }catch(Exception e){
+        } catch (Exception e) {
 
             JLabel erro = new JLabel("Logo não encontrada");
             erro.setForeground(Color.WHITE);
@@ -158,7 +155,7 @@ public class TelaLogin extends JFrame {
 
         // Alinhamento da linha do título
         JPanel linhaTitulo = new JPanel();
-        linhaTitulo.setBackground(new Color(185,120,30));
+        linhaTitulo.setBackground(new Color(185, 120, 30));
         linhaTitulo.setBounds(175, 70, 150, 3);
 
 
@@ -174,31 +171,31 @@ public class TelaLogin extends JFrame {
 
 
         lbUsuario = new JLabel("Usuário");
-        lbUsuario.setBounds(50,120,100,20);
+        lbUsuario.setBounds(50, 120, 100, 20);
 
         txUsuario = new JTextField();
         txUsuario.setBorder(
                 BorderFactory.createCompoundBorder(
-                        BorderFactory.createLineBorder(new Color(220,220,220), 1, true),
-                        BorderFactory.createEmptyBorder(5,10,5,10)
+                        BorderFactory.createLineBorder(new Color(220, 220, 220), 1, true),
+                        BorderFactory.createEmptyBorder(5, 10, 5, 10)
                 )
         );
         txUsuario.setFont(new Font("Segoe UI", Font.PLAIN, 15));
-        txUsuario.setBounds(50,145,400,45);
+        txUsuario.setBounds(50, 145, 400, 45);
 
 
         lbSenha = new JLabel("Senha");
-        lbSenha.setBounds(50,220,100,20);
+        lbSenha.setBounds(50, 220, 100, 20);
 
         txSenha = new JPasswordField();
         txSenha.setBorder(
                 BorderFactory.createCompoundBorder(
-                        BorderFactory.createLineBorder(new Color(220,220,220), 1, true),
-                        BorderFactory.createEmptyBorder(5,10,5,10)
+                        BorderFactory.createLineBorder(new Color(220, 220, 220), 1, true),
+                        BorderFactory.createEmptyBorder(5, 10, 5, 10)
                 )
         );
         txSenha.setFont(new Font("Segoe UI", Font.PLAIN, 15));
-        txSenha.setBounds(50,245,400,45);
+        txSenha.setBounds(50, 245, 400, 45);
 
 
         btEntrar = new JButton("Entrar");
@@ -263,7 +260,7 @@ public class TelaLogin extends JFrame {
                 // ATIVAÇÃO DA AÇÃO: Liga o painel ao banco através do Controller
                 new RedefinirSenhaController(painelRedefinir);
 
-                // CONFIGURAÇÃO DO BOTÃO VOLTAR DO NOVO PAINEL
+                // 🔥 CONFIGURAÇÃO DO BOTÃO VOLTAR DO NOVO PAINEL
                 painelRedefinir.getLblVoltar().addMouseListener(new MouseAdapter() {
                     @Override
                     public void mouseClicked(MouseEvent ev) {
@@ -330,7 +327,7 @@ public class TelaLogin extends JFrame {
 
     // MÉTODOS
 
-    public void exibirMensagem(String msg){
+    public void exibirMensagem(String msg) {
         UIManager.put("OptionPane.background", Color.WHITE);
         UIManager.put("Panel.background", Color.WHITE);
         UIManager.put("OptionPane.messageFont", new Font("Segoe UI", Font.PLAIN, 15));
@@ -344,26 +341,26 @@ public class TelaLogin extends JFrame {
         );
     }
 
-    public void limparCampos(){
+    public void limparCampos() {
         txUsuario.setText("");
         txSenha.setText("");
     }
 
     // GETTERS
 
-    public JTextField getTxUsuario(){
+    public JTextField getTxUsuario() {
         return txUsuario;
     }
 
-    public JPasswordField getTxSenha(){
+    public JPasswordField getTxSenha() {
         return txSenha;
     }
 
-    public JButton getBtEntrar(){
+    public JButton getBtEntrar() {
         return btEntrar;
     }
 
-    public JButton getBtLimpar(){
+    public JButton getBtLimpar() {
         return btLimpar;
     }
 }

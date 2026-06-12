@@ -21,7 +21,6 @@ public class ControllerCadastroAssociado {
     private String cpfTemp;
     private Endereco enderecoTemp;
 
-    // Referências explícitas para controle seguro de listeners do Swing
     private ActionListener acaoCadastrar;
     private ActionListener acaoFinalizar;
 
@@ -40,7 +39,6 @@ public class ControllerCadastroAssociado {
     }
 
     private void configurarEventos() {
-        // 1. Remove as ações anteriores mapeadas por este escopo de controller
         if (acaoCadastrar != null) {
             painelCadastro.getBtnCadastrar().removeActionListener(acaoCadastrar);
         }
@@ -48,7 +46,6 @@ public class ControllerCadastroAssociado {
             painelSenha.getBtnFinalizar().removeActionListener(acaoFinalizar);
         }
 
-        // 2. Limpa de forma absoluta qualquer listener órfão persistido nas Views estáticas
         for (ActionListener al : painelCadastro.getBtnCadastrar().getActionListeners()) {
             painelCadastro.getBtnCadastrar().removeActionListener(al);
         }
@@ -56,55 +53,52 @@ public class ControllerCadastroAssociado {
             painelSenha.getBtnFinalizar().removeActionListener(al);
         }
 
-        // 3. Instancia as lógicas operacionais de clique
         acaoCadastrar = e -> processarPrimeiraEtapa();
         acaoFinalizar = e -> finalizarCadastroGestor();
 
-        // 4. Vincula as novas ações limpas aos respectivos botões
         painelCadastro.getBtnCadastrar().addActionListener(acaoCadastrar);
         painelSenha.getBtnFinalizar().addActionListener(acaoFinalizar);
     }
 
-    // ================= CADASTRO ETAPA 1 =================
     private void processarPrimeiraEtapa() {
-
         String nome = painelCadastro.getTxtNome().getText().trim();
-        String cpf = painelCadastro.getTxtCpf().getText().trim();
+        String cpfRaw = painelCadastro.getTxtCpf().getText().trim();
         String logradouro = painelCadastro.getTxtLogradouro().getText().trim();
         String city = painelCadastro.getTxtCidade().getText().trim();
         String estado = painelCadastro.getTxtEstado().getText().trim();
         String referencia = painelCadastro.getTxtReferencia().getText().trim();
 
-        // Validação de campos obrigatórios
-        if (nome.isEmpty() || cpf.isEmpty() || logradouro.isEmpty() || city.isEmpty() || estado.isEmpty()) {
+        if (nome.isEmpty() || cpfRaw.isEmpty() || logradouro.isEmpty() || city.isEmpty() || estado.isEmpty()) {
             JOptionPane.showMessageDialog(
-                    null,
+                    telaCadastro,
                     "Preencha todos os campos obrigatórios!",
-                    "Erro",
+                    "Campos Vazios",
                     JOptionPane.WARNING_MESSAGE
             );
             return;
         }
 
-        // 🛑 REGRA DE SEGURANÇA: Bloqueia o avanço imediatamente se o CPF já existir na base
+        // Padroniza removendo pontos e traços para caber nos limites do banco de dados
+        String cpf = cpfRaw.replaceAll("[^0-9]", "");
+        if (cpf.length() > 11) {
+            cpf = cpf.substring(0, 11);
+        }
+
         if (dao.existeCpf(cpf)) {
             JOptionPane.showMessageDialog(
-                    null,
-                    "Não é possível cadastrar! O CPF '" + cpf + "' já se encontra registrado no sistema.",
+                    telaCadastro,
+                    "Não é possível cadastrar! O CPF '" + cpfRaw + "' já se encontra registrado no sistema.",
                     "CPF Duplicado",
                     JOptionPane.ERROR_MESSAGE
             );
             return;
         }
 
-        // Armazena temporariamente os dados validados em memória
         nomeTemp = nome;
         cpfTemp = cpf;
         enderecoTemp = new Endereco(city, estado, referencia, logradouro);
 
-        // CASO 1: ASSOCIADO NORMAL (Salva direto no banco)
         if (painelCadastro.getRbAssociado().isSelected()) {
-
             Usuario u = new Usuario(cpfTemp, "");
             u.setNome(nomeTemp);
             u.setTipoPerfil("Associado");
@@ -113,51 +107,37 @@ public class ControllerCadastroAssociado {
             boolean ok = dao.inserir(u);
 
             if (ok) {
-                JOptionPane.showMessageDialog(null, "Associado cadastrado com sucesso!");
-
-                // Sincroniza a JTable de listagem em tempo real
-                if (telaCadastro != null && telaCadastro.getControllerListar() != null) {
-                    telaCadastro.getControllerListar().carregarAssociados();
-                }
-
+                JOptionPane.showMessageDialog(telaCadastro, "Associado cadastrado com sucesso!");
+                atualizarListagemTelas();
                 limparFormulario();
             } else {
-                JOptionPane.showMessageDialog(null, "Erro ao salvar associado!");
+                JOptionPane.showMessageDialog(telaCadastro, "Erro ao salvar associado!", "Erro", JOptionPane.ERROR_MESSAGE);
             }
         }
-
-        // CASO 2: GESTOR → Transiciona para a tela de criação de credenciais (Senha)
         else if (painelCadastro.getRbGestor().isSelected()) {
-
-            telaCadastro.getCard().show(
-                    telaCadastro.getPainelConteudo(),
-                    "criarSenha"
-            );
-
-            // Redesenha a árvore gráfica de componentes imediatamente
-            telaCadastro.getPainelConteudo().revalidate();
-            telaCadastro.getPainelConteudo().repaint();
+            if (telaCadastro != null && telaCadastro.getCard() != null) {
+                telaCadastro.getCard().show(telaCadastro.getPainelConteudo(), "criarUsuarioSenha");
+                telaCadastro.getPainelConteudo().revalidate();
+                telaCadastro.getPainelConteudo().repaint();
+            }
         }
     }
 
-    // ================= FINALIZA GESTOR (ETAPA 2) =================
     private void finalizarCadastroGestor() {
-
-        String senha = new String(painelSenha.getTxtSenha().getPassword()).trim();
+        String _senha = new String(painelSenha.getTxtSenha().getPassword()).trim();
         String confirmar = new String(painelSenha.getTxtConfirmarSenha().getPassword()).trim();
 
-        if (senha.isEmpty() || confirmar.isEmpty()) {
-            JOptionPane.showMessageDialog(null, "Preencha a senha!");
+        if (_senha.isEmpty() || confirmar.isEmpty()) {
+            JOptionPane.showMessageDialog(telaCadastro, "Preencha os campos de senha obrigatórios!", "Campos Vazios", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        if (!senha.equals(confirmar)) {
-            JOptionPane.showMessageDialog(null, "Senhas não conferem!");
+        if (!_senha.equals(confirmar)) {
+            JOptionPane.showMessageDialog(telaCadastro, "As senhas digitadas não conferem!", "Erro de Validação", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        // Monta o objeto completo unindo os dados da Etapa 1 + Senha da Etapa 2
-        Usuario u = new Usuario(cpfTemp, senha);
+        Usuario u = new Usuario(cpfTemp, _senha);
         u.setNome(nomeTemp);
         u.setTipoPerfil("Gestor");
         u.setEndereco(enderecoTemp);
@@ -165,37 +145,31 @@ public class ControllerCadastroAssociado {
         boolean ok = dao.inserir(u);
 
         if (ok) {
-            JOptionPane.showMessageDialog(null, "Gestor cadastrado com sucesso!");
+            JOptionPane.showMessageDialog(telaCadastro, "Gestor cadastrado com sucesso!");
 
-            // Atualiza a tabela geral de visualização
-            if (telaCadastro != null && telaCadastro.getControllerListar() != null) {
-                telaCadastro.getControllerListar().carregarAssociados();
-            }
-
-            // Reseta todos os formulários e campos de texto
+            atualizarListagemTelas();
             limparFormulario();
+
             painelSenha.getTxtSenha().setText("");
             painelSenha.getTxtConfirmarSenha().setText("");
 
-            // Redireciona o fluxo de volta para o painel inicial de cadastros
-            telaCadastro.getCard().show(
-                    telaCadastro.getPainelConteudo(),
-                    "cadastros"
-            );
-
-            telaCadastro.getPainelConteudo().revalidate();
-            telaCadastro.getPainelConteudo().repaint();
+            if (telaCadastro != null && telaCadastro.getCard() != null) {
+                telaCadastro.getCard().show(telaCadastro.getPainelConteudo(), "listarAssociados");
+                telaCadastro.getPainelConteudo().revalidate();
+                telaCadastro.getPainelConteudo().repaint();
+            }
         } else {
-            JOptionPane.showMessageDialog(
-                    null,
-                    "Erro ao salvar gestor!",
-                    "Erro de Execução",
-                    JOptionPane.ERROR_MESSAGE
-            );
+            JOptionPane.showMessageDialog(telaCadastro, "Erro ao salvar gestor no banco de dados!", "Erro de Execução", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    // ================= LIMPAR CAMPOS =================
+    private void atualizarListagemTelas() {
+        // 🔥 CORRIGIDO: Chama diretamente o método real existente no seu ControllerListarAssociado
+        if (telaCadastro != null && telaCadastro.getControllerListar() != null) {
+            telaCadastro.getControllerListar().carregarAssociados();
+        }
+    }
+
     private void limparFormulario() {
         painelCadastro.getTxtNome().setText("");
         painelCadastro.getTxtCpf().setText("");
@@ -204,5 +178,9 @@ public class ControllerCadastroAssociado {
         painelCadastro.getTxtEstado().setText("");
         painelCadastro.getTxtReferencia().setText("");
         painelCadastro.getRbAssociado().setSelected(true);
+
+        nomeTemp = null;
+        cpfTemp = null;
+        enderecoTemp = null;
     }
 }

@@ -8,35 +8,31 @@ import java.awt.event.MouseEvent;
 
 public class PainelCadastroAssociado extends JPanel {
 
-    // Componentes de Dados Pessoais
+    private TelaPrincipal telaPrincipal;
+
     private JTextField txtNome;
     private JTextField txtCpf;
-
-    // Componentes de Endereço
     private JTextField txtLogradouro;
     private JTextField txtCidade;
     private JTextField txtEstado;
     private JTextField txtReferencia;
-
-    // Componentes de Seleção de Perfil
     private JRadioButton rbGestor;
     private JRadioButton rbAssociado;
     private ButtonGroup grupoTipo;
-
     private JButton btnCadastrar;
 
-    public PainelCadastroAssociado() {
+    public PainelCadastroAssociado(TelaPrincipal telaPrincipal) {
+        this.telaPrincipal = telaPrincipal;
+
         setLayout(null);
         setBackground(new Color(248, 245, 240));
 
-        // Container centralizado (Card do Formulário)
         JPanel boxFormulario = new JPanel();
         boxFormulario.setLayout(null);
         boxFormulario.setBackground(Color.WHITE);
         boxFormulario.setBounds(180, 40, 760, 480);
         boxFormulario.setBorder(new LineBorder(new Color(230, 225, 215), 1, true));
 
-        // Título interno do painel
         JLabel lbTitulo = new JLabel("Cadastrar Associado");
         lbTitulo.setFont(new Font("Segoe UI", Font.BOLD, 22));
         lbTitulo.setForeground(new Color(35, 18, 4));
@@ -92,7 +88,7 @@ public class PainelCadastroAssociado extends JPanel {
         boxFormulario.add(rbAssociado);
 
         // ================= COLUNA 2: ENDEREÇO =================
-        JLabel lbLogradouro = new JLabel("Logradouro (Rua, Número...):");
+        JLabel lbLogradouro = new JLabel("Logradouro");
         lbLogradouro.setFont(new Font("Segoe UI", Font.BOLD, 13));
         lbLogradouro.setForeground(Color.GRAY);
         lbLogradouro.setBounds(400, 80, 320, 20);
@@ -146,13 +142,12 @@ public class PainelCadastroAssociado extends JPanel {
         btnCadastrar.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnCadastrar.setBounds(40, 380, 680, 45);
 
-        // Efeito Hover para seguir a identidade visual premium dos botões
+        // 🔥 CORREÇÃO DO HOVER: Usando apenas os gatilhos de entrada/saída visuais
         btnCadastrar.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
                 btnCadastrar.setBackground(new Color(205, 145, 55));
             }
-
             @Override
             public void mouseExited(MouseEvent e) {
                 btnCadastrar.setBackground(new Color(185, 120, 30));
@@ -163,7 +158,6 @@ public class PainelCadastroAssociado extends JPanel {
         add(boxFormulario);
     }
 
-    // Método auxiliar para dar o acabamento premium às caixas de texto
     private void estilizarCampo(JTextField campo) {
         campo.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         campo.setBorder(BorderFactory.createCompoundBorder(
@@ -172,7 +166,11 @@ public class PainelCadastroAssociado extends JPanel {
         ));
     }
 
-    // Getters
+    public boolean isGestorSelecionado() {
+        return rbGestor.isSelected();
+    }
+
+    public TelaPrincipal getTelaPrincipal() { return telaPrincipal; }
     public JTextField getTxtNome() { return txtNome; }
     public JTextField getTxtCpf() { return txtCpf; }
     public JTextField getTxtLogradouro() { return txtLogradouro; }

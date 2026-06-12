@@ -29,25 +29,26 @@ public class ControllerPrincipal {
             );
         }
 
-        // 4. Configura os eventos complementares (como o botão Sair)
+        // 4. Configura os eventos complementares
         eventos();
 
-        // 5. Exibe a tela após tudo configurado e acoplado
+        // 5. Exibe a tela após tudo configurado e acoplado com segurança
         tela.setVisible(true);
     }
 
     private void eventos() {
 
-        // Evento customizado para o menu de Associados (recarregar dados do banco ao clicar)
+        // Executa a listagem de dados fora da EDT em uma Thread paralela para evitar travamento
         tela.getBtAssociados().addActionListener(e -> {
-            if (tela.getControllerListar() != null) {
-                tela.getControllerListar().carregarAssociados();
-            }
+            new Thread(() -> {
+                if (tela.getControllerListar() != null) {
+                    tela.getControllerListar().carregarAssociados();
+                }
+            }).start();
         });
 
         // Evento customizado para o menu Financeiro
         tela.getBtFinanceiro().addActionListener(e -> {
-            // Caso queira efetuar lógicas adicionais como atualizar balanços ou logs ao abrir a aba
             System.out.println("Aba Movimentação Financeira acessada pelo usuário.");
         });
 

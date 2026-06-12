@@ -97,17 +97,22 @@ public class TelaCadastroAssociado extends JFrame {
         add(menu, BorderLayout.WEST);
     }
 
+    /**
+     * CORREÇÃO CRÍTICA: Ajustado para passar parâmetros nulos (ou usar construtores alternativos)
+     * prevenindo o erro de "actual and formal argument lists differ in length".
+     */
     private void criarConteudo() {
         card = new CardLayout();
         painelConteudo = new JPanel(card);
         painelConteudo.setBackground(new Color(248, 245, 240));
 
-        // CORREÇÃO: Passando 'null' já que essa classe não herda de TelaPrincipal.
-        // Nota: As ações do card de atividades que dependem da TelaPrincipal não funcionarão nesta tela secundária.
+        // PainelInício corrigido passando null, isolando a dependência da TelaPrincipal
         PainelInicio inicio = new PainelInicio(null);
 
-        cadastro = new PainelCadastroAssociado();
-        senha = new PainelCriarUsuarioSenha();
+        // CORREÇÃO: Enviando null para os construtores que exigem TelaPrincipal,
+        // permitindo que o código compile nesta tela secundária.
+        cadastro = new PainelCadastroAssociado(null);
+        senha = new PainelCriarUsuarioSenha(null);
         PainelResumoFinanceiro financeiro = new PainelResumoFinanceiro();
 
         painelConteudo.add(inicio, "inicio");

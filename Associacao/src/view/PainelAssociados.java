@@ -1,7 +1,7 @@
 package view;
 
 import javax.swing.*;
-import javax.swing.border.LineBorder;
+import javax.swing.border.Border;
 import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.FocusAdapter;
@@ -14,12 +14,18 @@ public class PainelAssociados extends JPanel {
     private JTable tabela;
     private JTextField pesquisa;
     private JButton buscar;
-    private JButton btnVoltarLink; // 🔥 O link "Voltar" (implementado como JButton transparente)
+    private JButton btnVoltarLink;
 
     private DefaultTableModel modelo;
     private TableRowSorter<DefaultTableModel> sorter;
 
     private final String PLACEHOLDER = "Buscar por Nome ou CPF";
+    private final Border BORDA_CLEAN = BorderFactory.createLineBorder(new Color(230, 225, 218), 1, true);
+
+    // Cores Premium do Sistema unificadas
+    private final Color COR_PRIMARIA = new Color(43, 22, 7);
+    private final Color COR_DESTAQUE = new Color(185, 120, 30);
+    private final Color COR_HOVER = new Color(205, 145, 55);
 
     // ================= MVC LISTENER =================
     public interface AcoesListener {
@@ -47,31 +53,39 @@ public class PainelAssociados extends JPanel {
 
     // ================= CONSTRUTOR =================
     public PainelAssociados() {
-        setLayout(null);
-        setBackground(new Color(248, 245, 240));
+        setLayout(new BorderLayout(0, 20));
+        setBackground(Color.WHITE);
+        setBorder(BorderFactory.createEmptyBorder(25, 30, 25, 30));
 
-        criarTitulo();
-        criarPesquisa();
-        criarTabela();
+        // Construção das seções estruturadas (Fluidez em resoluções altas)
+        criarCabecalhoEPesquisa();
+        criarPainelTabela();
     }
 
-    private void criarTitulo() {
-        JLabel titulo = new JLabel("Associados");
-        titulo.setFont(new Font("Segoe UI", Font.BOLD, 30));
-        titulo.setForeground(new Color(70, 40, 15));
-        titulo.setBounds(40, 25, 300, 40);
-        add(titulo);
-    }
+    private void criarCabecalhoEPesquisa() {
+        JPanel painelSuperior = new JPanel();
+        painelSuperior.setLayout(new BoxLayout(painelSuperior, BoxLayout.Y_AXIS));
+        painelSuperior.setOpaque(false);
 
-    private void criarPesquisa() {
-        // Retornou ao tamanho original de 760 de largura
+        // Título da Seção
+        JLabel titulo = new JLabel("Gestão de Associados");
+        titulo.setFont(new Font("Segoe UI", Font.BOLD, 26));
+        titulo.setForeground(COR_PRIMARIA);
+        titulo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        painelSuperior.add(titulo);
+        painelSuperior.add(Box.createVerticalStrut(15));
+
+        // Linha de Comandos (Pesquisa + Botões de Ação)
+        JPanel linhaComandos = new JPanel(new BorderLayout(15, 0));
+        linhaComandos.setOpaque(false);
+        linhaComandos.setAlignmentX(Component.LEFT_ALIGNMENT);
+
         pesquisa = new JTextField(PLACEHOLDER);
-        pesquisa.setBounds(40, 98, 760, 40);
         pesquisa.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         pesquisa.setForeground(Color.GRAY);
         pesquisa.setBorder(BorderFactory.createCompoundBorder(
-                new LineBorder(new Color(200, 200, 200)),
-                BorderFactory.createEmptyBorder(0, 10, 0, 0)
+                BORDA_CLEAN,
+                BorderFactory.createEmptyBorder(0, 12, 0, 12)
         ));
 
         pesquisa.addFocusListener(new FocusAdapter() {
@@ -91,100 +105,76 @@ public class PainelAssociados extends JPanel {
                 }
             }
         });
-        add(pesquisa);
+        linhaComandos.add(pesquisa, BorderLayout.CENTER);
 
-        // 🔥 NOVO: Link discreto "Voltar" posicionado logo abaixo do campo de busca (Y: 140)
+        // Agrupamento dos botões à direita
+        JPanel painelBotoes = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        painelBotoes.setOpaque(false);
+
+        buscar = new JButton("Buscar");
+        estilizarBotaoAcao(buscar);
+        buscar.addActionListener(e -> filtrar());
+        pesquisa.addActionListener(e -> filtrar());
+        painelBotoes.add(buscar);
+
+        JButton btnNovoAssociado = new JButton("Cadastrar");
+        estilizarBotaoAcao(btnNovoAssociado);
+        btnNovoAssociado.addActionListener(e -> {
+            Window window = SwingUtilities.getWindowAncestor(PainelAssociados.this);
+            if (window instanceof TelaPrincipal) {
+                TelaPrincipal tela = (TelaPrincipal) window;
+                tela.getCard().show(tela.getPainelConteudo(), "cadastroAssociado");
+                tela.alternarCorBotao(null);
+            } else if (window instanceof TelaCadastroAssociado) {
+                TelaCadastroAssociado telaSecundaria = (TelaCadastroAssociado) window;
+                telaSecundaria.getCard().show(telaSecundaria.getPainelConteudo(), "criarCadastro");
+                telaSecundaria.alternarFocoMenu(null);
+            }
+        });
+        painelBotoes.add(btnNovoAssociado);
+
+        linhaComandos.add(painelBotoes, BorderLayout.EAST);
+        painelSuperior.add(linhaComandos);
+        painelSuperior.add(Box.createVerticalStrut(8));
+
+        // Link para limpar filtros e retornar à listagem padrão
         btnVoltarLink = new JButton("← Voltar para todos os associados");
-        btnVoltarLink.setBounds(40, 140, 250, 22);
-        btnVoltarLink.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        btnVoltarLink.setForeground(new Color(185, 120, 30)); // Cor dourada padrão
+        btnVoltarLink.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btnVoltarLink.setForeground(COR_DESTAQUE);
         btnVoltarLink.setContentAreaFilled(false);
         btnVoltarLink.setBorderPainted(false);
         btnVoltarLink.setFocusPainted(false);
         btnVoltarLink.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnVoltarLink.setHorizontalAlignment(SwingConstants.LEFT);
-        btnVoltarLink.setVisible(false); // Fica oculto até uma busca ser feita
+        btnVoltarLink.setAlignmentX(Component.LEFT_ALIGNMENT);
+        btnVoltarLink.setVisible(false);
 
-        // Efeito Hover para o Link
         btnVoltarLink.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
-                btnVoltarLink.setForeground(new Color(70, 40, 15)); // Muda para o marrom escuro
+                btnVoltarLink.setForeground(COR_PRIMARIA);
             }
             @Override
             public void mouseExited(MouseEvent e) {
-                btnVoltarLink.setForeground(new Color(185, 120, 30)); // Volta ao dourado
+                btnVoltarLink.setForeground(COR_DESTAQUE);
             }
         });
 
         btnVoltarLink.addActionListener(e -> limparFiltroCompleto());
-        add(btnVoltarLink);
+        painelSuperior.add(btnVoltarLink);
 
-        // Botão Buscar
-        buscar = new JButton("Buscar");
-        buscar.setBounds(820, 98, 140, 40);
-        buscar.setBackground(new Color(185, 120, 30));
-        buscar.setForeground(Color.WHITE);
-        buscar.setFocusPainted(false);
-        buscar.setBorderPainted(false);
-        buscar.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        buscar.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-        buscar.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                buscar.setBackground(new Color(205, 145, 55));
-            }
-            @Override
-            public void mouseExited(MouseEvent e) {
-                buscar.setBackground(new Color(185, 120, 30));
-            }
-        });
-        add(buscar);
-
-        // Botão Cadastrar
-        JButton btnNovoAssociado = new JButton("Cadastrar");
-        btnNovoAssociado.setBounds(980, 98, 140, 40);
-        btnNovoAssociado.setBackground(new Color(185, 120, 30));
-        btnNovoAssociado.setForeground(Color.WHITE);
-        btnNovoAssociado.setFocusPainted(false);
-        btnNovoAssociado.setBorderPainted(false);
-        btnNovoAssociado.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        btnNovoAssociado.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-        btnNovoAssociado.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                btnNovoAssociado.setBackground(new Color(205, 145, 55));
-            }
-            @Override
-            public void mouseExited(MouseEvent e) {
-                btnNovoAssociado.setBackground(new Color(185, 120, 30));
-            }
-        });
-
-        btnNovoAssociado.addActionListener(e -> {
-            TelaPrincipal tela = (TelaPrincipal) SwingUtilities.getWindowAncestor(PainelAssociados.this);
-            if (tela != null) {
-                tela.getCard().show(tela.getPainelConteudo(), "cadastros");
-                try {
-                    tela.selecionarBotao(null);
-                } catch (Exception ex) {}
-            }
-        });
-        add(btnNovoAssociado);
+        add(painelSuperior, BorderLayout.NORTH);
     }
 
-    private void criarTabela() {
-        JPanel card = new JPanel(new BorderLayout());
-        card.setBounds(40, 170, 1080, 420);
-        card.setBackground(Color.WHITE);
-        card.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(230, 230, 230)),
-                BorderFactory.createEmptyBorder(15, 15, 15, 15)
+    private void criarPainelTabela() {
+        JPanel cardContainer = new JPanel(new BorderLayout());
+        cardContainer.setBackground(Color.WHITE);
+        cardContainer.setBorder(BorderFactory.createCompoundBorder(
+                BORDA_CLEAN,
+                BorderFactory.createEmptyBorder(10, 10, 10, 10)
         ));
 
-        String[] colunas = {"Nome", "CPF", "Endereço", "Data", "Ações"};
+        String[] colunas = {"Nome", "CPF", "Endereço", "Data de Inclusão", "Ações"};
 
         modelo = new DefaultTableModel(colunas, 0) {
             @Override
@@ -198,25 +188,34 @@ public class PainelAssociados extends JPanel {
             public Component prepareRenderer(TableCellRenderer renderer, int row, int column) {
                 Component c = super.prepareRenderer(renderer, row, column);
                 if (!isRowSelected(row)) {
-                    c.setBackground(row % 2 == 0 ? Color.WHITE : new Color(248, 245, 240));
+                    c.setBackground(row % 2 == 0 ? Color.WHITE : new Color(252, 250, 246));
                 }
                 return c;
             }
         };
 
-        tabela.setRowHeight(45);
+        tabela.setRowHeight(50);
         tabela.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        tabela.getTableHeader().setBackground(new Color(205, 145, 55));
-        tabela.getTableHeader().setForeground(Color.WHITE);
-        tabela.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
+        tabela.setSelectionBackground(new Color(245, 240, 232));
+        tabela.setSelectionForeground(COR_PRIMARIA);
+        tabela.setShowGrid(false);
+        tabela.setIntercellSpacing(new Dimension(0, 0));
+
+        // Customização do Cabeçalho
+        JTableHeader header = tabela.getTableHeader();
+        header.setBackground(COR_PRIMARIA);
+        header.setForeground(Color.WHITE);
+        header.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        header.setPreferredSize(new Dimension(0, 45));
+        header.setReorderingAllowed(false);
 
         sorter = new TableRowSorter<>(modelo);
         tabela.setRowSorter(sorter);
 
-        DefaultTableCellRenderer center = new DefaultTableCellRenderer();
-        center.setHorizontalAlignment(SwingConstants.CENTER);
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
         for (int i = 0; i < 4; i++) {
-            tabela.getColumnModel().getColumn(i).setCellRenderer(center);
+            tabela.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
         }
 
         tabela.getColumnModel().getColumn(4).setCellRenderer(new AcoesRenderer());
@@ -241,23 +240,49 @@ public class PainelAssociados extends JPanel {
             }
         });
 
+        // Configuração do ScrollPane com barras finas e fluidas premium
         JScrollPane scroll = new JScrollPane(tabela);
         scroll.setBorder(null);
-        card.add(scroll, BorderLayout.CENTER);
-        add(card);
+        scroll.getViewport().setBackground(Color.WHITE);
+        scroll.getVerticalScrollBar().setUI(new ScrollBarCustomUI());
+        scroll.getHorizontalScrollBar().setUI(new ScrollBarCustomUI());
+        scroll.getVerticalScrollBar().setUnitIncrement(16);
+        scroll.getVerticalScrollBar().setPreferredSize(new Dimension(8, 0));
+        scroll.getHorizontalScrollBar().setPreferredSize(new Dimension(0, 8));
 
-        buscar.addActionListener(e -> filtrar());
-        pesquisa.addActionListener(e -> filtrar());
+        cardContainer.add(scroll, BorderLayout.CENTER);
+        add(cardContainer, BorderLayout.CENTER);
     }
 
-    // ================= FILTRO COM LINK DINÂMICO =================
+    private void estilizarBotaoAcao(JButton btn) {
+        btn.setPreferredSize(new Dimension(130, 40));
+        btn.setBackground(COR_DESTAQUE);
+        btn.setForeground(Color.WHITE);
+        btn.setFocusPainted(false);
+        btn.setBorderPainted(false);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        btn.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                btn.setBackground(COR_HOVER);
+            }
+            @Override
+            public void mouseExited(MouseEvent e) {
+                btn.setBackground(COR_DESTAQUE);
+            }
+        });
+    }
+
     private void filtrar() {
         String txt = pesquisa.getText().trim();
         if (txt.isEmpty() || txt.equals(PLACEHOLDER)) {
             limparFiltroCompleto();
         } else {
             sorter.setRowFilter(RowFilter.regexFilter("(?i)" + txt, 0, 1));
-            btnVoltarLink.setVisible(true); // Faz o link "Voltar" aparecer abaixo da caixa
+            btnVoltarLink.setVisible(true);
+            revalidate();
             repaint();
         }
     }
@@ -266,7 +291,8 @@ public class PainelAssociados extends JPanel {
         sorter.setRowFilter(null);
         pesquisa.setText(PLACEHOLDER);
         pesquisa.setForeground(Color.GRAY);
-        btnVoltarLink.setVisible(false); // Oculta o link pois a lista já está completa
+        btnVoltarLink.setVisible(false);
+        revalidate();
         repaint();
     }
 
@@ -283,20 +309,20 @@ public class PainelAssociados extends JPanel {
         modelo.addRow(nova);
     }
 
+    // ================= COMPONENTS DE RENDERIZAÇÃO DE CELL =================
     private class PainelAcoes extends JPanel {
         JButton editar = new JButton("Editar");
         JButton excluir = new JButton("Excluir");
         JLabel divisor = new JLabel("|");
 
         public PainelAcoes() {
-            setLayout(new FlowLayout(FlowLayout.CENTER, 4, 5));
-            setBackground(Color.WHITE);
+            setLayout(new FlowLayout(FlowLayout.CENTER, 6, 8));
             setOpaque(true);
 
-            configurar(editar, new Color(205, 145, 55));
-            divisor.setForeground(new Color(210, 210, 210));
-            divisor.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-            configurar(excluir, new Color(70, 40, 15));
+            configurar(editar, COR_DESTAQUE);
+            divisor.setForeground(new Color(210, 205, 195));
+            divisor.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+            configurar(excluir, COR_PRIMARIA);
 
             add(editar);
             add(divisor);
@@ -309,6 +335,7 @@ public class PainelAssociados extends JPanel {
             btn.setContentAreaFilled(false);
             btn.setBorderPainted(false);
             btn.setFocusPainted(false);
+            btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         }
     }
 
@@ -319,7 +346,7 @@ public class PainelAssociados extends JPanel {
                                                        int row, int column) {
             Color bg = isSelected
                     ? table.getSelectionBackground()
-                    : (row % 2 == 0 ? Color.WHITE : new Color(248, 245, 240));
+                    : (row % 2 == 0 ? Color.WHITE : new Color(252, 250, 246));
             setBackground(bg);
             return this;
         }

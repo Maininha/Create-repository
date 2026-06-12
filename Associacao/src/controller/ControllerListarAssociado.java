@@ -37,8 +37,14 @@ public class ControllerListarAssociado {
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
 
         for (Associado a : dao.listar()) {
-            String data = a.getDataCadastro() != null ? sdf.format(a.getDataCadastro()) : "";
-            String endereco = a.getEndereco() != null ? a.getEndereco().getLogradouro() : "";
+
+            String data = (a.getDataCadastro() != null)
+                    ? sdf.format(a.getDataCadastro())
+                    : "";
+
+            String endereco = (a.getEndereco() != null)
+                    ? a.getEndereco().getLogradouro()
+                    : "";
 
             painel.adicionarLinha(new Object[]{
                     a.getNome(),
@@ -50,7 +56,8 @@ public class ControllerListarAssociado {
     }
 
     private void eventos() {
-        // Limpa os listeners antigos para evitar execuções duplicadas ao salvar
+
+        // limpa listeners antigos do editar
         for (java.awt.event.ActionListener al : editar.getBtnSalvar().getActionListeners()) {
             editar.getBtnSalvar().removeActionListener(al);
         }
@@ -58,15 +65,20 @@ public class ControllerListarAssociado {
             editar.getBtnCancelar().removeActionListener(al);
         }
 
-        // Configura as ações de Editar e Excluir disparadas pela View
+        // =========================
+        // AÇÕES DA TABELA
+        // =========================
         painel.setAcoesListener(new PainelAssociados.AcoesListener() {
+
             @Override
             public void editar(int rowModel) {
+
                 if (rowModel < 0) return;
 
-                // 🔥 SOLUÇÃO DO ERRO: Acessa o arquivo direto do MODELO (.getModel())
-                // Isso impede o Swing de tentar re-filtrar o índice que a View já tratou de forma absoluta.
-                String cpf = painel.getTabela().getModel().getValueAt(rowModel, 1).toString();
+                String cpf = painel.getTabela()
+                        .getModel()
+                        .getValueAt(rowModel, 1)
+                        .toString();
 
                 Associado a = dao.buscarPorCpf(cpf);
                 if (a == null) return;
@@ -81,55 +93,79 @@ public class ControllerListarAssociado {
                     editar.getTxtReferencia().setText(a.getEndereco().getReferencia());
                 }
 
-                frame.getCard().show(frame.getPainelConteudo(), "editar");
+                // 🔥 CORREÇÃO PRINCIPAL AQUI
+                frame.getCard().show(
+                        frame.getPainelConteudo(),
+                        "editarAssociado"
+                );
+
+                frame.getPainelConteudo().revalidate();
+                frame.getPainelConteudo().repaint();
             }
 
             @Override
             public void excluir(int rowModel) {
+
                 if (rowModel < 0) return;
 
-                // 🔥 SOLUÇÃO DO ERRO: Lendo o dado bruto direto do MODELO estável da tabela
-                String cpf = painel.getTabela().getModel().getValueAt(rowModel, 1).toString();
+                String cpf = painel.getTabela()
+                        .getModel()
+                        .getValueAt(rowModel, 1)
+                        .toString();
 
-                Object[] opcoes = {"Sim", "Não"};
-
-                int resp = JOptionPane.showOptionDialog(
+                int resp = JOptionPane.showConfirmDialog(
                         frame,
                         "Tem certeza que deseja excluir este associado?",
                         "Confirmar Exclusão",
                         JOptionPane.YES_NO_OPTION,
-                        JOptionPane.WARNING_MESSAGE,
-                        null,
-                        opcoes,
-                        opcoes[0]
+                        JOptionPane.WARNING_MESSAGE
                 );
 
                 if (resp == JOptionPane.YES_OPTION) {
+
                     if (dao.excluir(cpf)) {
-                        JOptionPane.showMessageDialog(frame, "Registro excluído com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                        JOptionPane.showMessageDialog(
+                                frame,
+                                "Registro excluído com sucesso!"
+                        );
                         carregarAssociados();
                     } else {
-                        JOptionPane.showMessageDialog(frame, "Não foi possível excluir o registro.", "Erro de Operação", JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.showMessageDialog(
+                                frame,
+                                "Erro ao excluir registro.",
+                                "Erro",
+                                JOptionPane.ERROR_MESSAGE
+                        );
                     }
                 }
             }
         });
 
-        // Evento do botão Salvar da tela de Edição
+        // =========================
+        // BOTÃO SALVAR
+        // =========================
         editar.getBtnSalvar().addActionListener(e -> {
+
             String cpf = editar.getTxtCpf().getText();
             String nome = editar.getTxtNome().getText();
+
             String logradouro = editar.getTxtLogradouro().getText();
             String cidade = editar.getTxtCidade().getText();
             String estado = editar.getTxtEstado().getText();
             String referencia = editar.getTxtReferencia().getText();
 
             if (nome.trim().isEmpty()) {
-                JOptionPane.showMessageDialog(frame, "O campo 'Nome' é obrigatório.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(
+                        frame,
+                        "O campo Nome é obrigatório",
+                        "Aviso",
+                        JOptionPane.WARNING_MESSAGE
+                );
                 return;
             }
 
             Endereco end = new Endereco(cidade, estado, referencia, logradouro);
+
             Associado a = new Associado();
             a.setCpf(cpf);
             a.setNome(nome);
@@ -139,17 +175,32 @@ public class ControllerListarAssociado {
             boolean ok = dao.atualizarCompleto(a);
 
             if (ok) {
-                JOptionPane.showMessageDialog(frame, "Dados atualizados com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(frame, "Atualizado com sucesso!");
+
                 carregarAssociados();
-                frame.getCard().show(frame.getPainelConteudo(), "associados");
+
+                frame.getCard().show(
+                        frame.getPainelConteudo(),
+                        "listarAssociados"
+                );
             } else {
-                JOptionPane.showMessageDialog(frame, "Erro ao atualizar os dados do associado.", "Erro de Operação", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(
+                        frame,
+                        "Erro ao atualizar",
+                        "Erro",
+                        JOptionPane.ERROR_MESSAGE
+                );
             }
         });
 
-        // Evento do botão Cancelar da tela de Edição
+        // =========================
+        // CANCELAR
+        // =========================
         editar.getBtnCancelar().addActionListener(e -> {
-            frame.getCard().show(frame.getPainelConteudo(), "associados");
+            frame.getCard().show(
+                    frame.getPainelConteudo(),
+                    "listarAssociados"
+            );
         });
     }
 }

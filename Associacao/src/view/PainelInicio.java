@@ -19,7 +19,7 @@ import util.GeradorPdfRelatorio;
 
 public class PainelInicio extends JPanel {
 
-    private static PainelInicio instanciaAtActive;
+    private static PainelInicio instanciaAtiva;
 
     // Componentes dinâmicos do banco
     private JLabel lblContadorAssociados;
@@ -39,11 +39,11 @@ public class PainelInicio extends JPanel {
     private InicioController inicioController;
     private TelaPrincipal telaPrincipal;
 
-    // Borda limpa que consome zero processamento gráfico
+    // BORDA DE SUBSTITUIÇÃO: Uma linha clean que consome 0% de processamento gráfico
     private final Border BORDA_CLEAN = BorderFactory.createLineBorder(new Color(230, 225, 218), 1, true);
 
     public PainelInicio(TelaPrincipal telaPrincipal) {
-        instanciaAtActive = this;
+        instanciaAtiva = this;
         this.telaPrincipal = telaPrincipal;
         this.inicioController = new InicioController();
 
@@ -53,87 +53,55 @@ public class PainelInicio extends JPanel {
         int larguraDinamica = Toolkit.getDefaultToolkit().getScreenSize().width - 220;
         setPreferredSize(new Dimension(larguraDinamica, 850));
 
-        // 1. Montagem estrutural de tela vazia instantânea
+        // 1. Montagem estrutural instantânea
         criarBanner();
         criarCards();
         criarRelatorios();
 
-        // 2. 🔥 ATIVAÇÃO DA CARGA INTELIGENTE ISOLADA
-        carregarImagensEmBackground();
-        recarregarDadosBanco();
+        // 2. Dispara a carga pesada de dados e imagens em background isolado
+        inicializarCargaParalelaCompleta();
     }
 
     public static void dispararAtualizacaoAutomatica() {
-        if (instanciaAtActive != null) {
-            instanciaAtActive.recarregarDadosBanco();
+        if (instanciaAtiva != null) {
+            instanciaAtiva.recarregarDadosBanco();
         }
     }
 
-    /**
-     * 🔥 OTIMIZAÇÃO HISTÓRICA: Cada indicador agora roda na sua própria Thread.
-     * Se uma tabela do banco estiver pesada, ela não atrasa a exibição do resto do painel.
-     */
-    public void recarregarDadosBanco() {
-        // Indicador 1: Total de Associados
+    private void inicializarCargaParalelaCompleta() {
         new Thread(() -> {
             try {
-                int total = inicioController.obterTotalAssociados();
-                SwingUtilities.invokeLater(() -> lblContadorAssociados.setText(String.valueOf(total)));
-            } catch (Exception e) {
-                System.out.println("Erro ao contar associados: " + e.getMessage());
-            }
-        }).start();
-
-        // Indicador 2: Cadastros do Mês
-        new Thread(() -> {
-            try {
-                int cadastros = inicioController.obterCadastrosDoMes();
-                SwingUtilities.invokeLater(() -> lblContadorCadastros.setText(String.valueOf(cadastros)));
-            } catch (Exception e) {
-                System.out.println("Erro ao obter cadastros: " + e.getMessage());
-            }
-        }).start();
-
-        // Indicador 3: Relatórios do Mês
-        new Thread(() -> {
-            try {
-                int relatorios = inicioController.obterRelatoriosDoMes();
-                SwingUtilities.invokeLater(() -> lblContadorRelatorios.setText(String.valueOf(relatorios)));
-            } catch (Exception e) {
-                System.out.println("Erro ao obter relatórios: " + e.getMessage());
-            }
-        }).start();
-    }
-
-    /**
-     * 🔥 Separa o carregamento visual do carregamento de dados do banco
-     */
-    private void carregarImagensEmBackground() {
-        new Thread(() -> {
-            try {
-                // Processa o Banner pesado
+                // Carregamento e redimensionamento do Banner em segundo plano
                 java.net.URL urlBanner = getClass().getResource("/imagens/banner.jpeg");
+                ImageIcon iconBannerFinal = null;
                 if (urlBanner != null) {
                     ImageIcon orig = new ImageIcon(urlBanner);
-                    Image img = orig.getImage().getScaledInstance(1100, 250, Image.SCALE_FAST);
-                    ImageIcon bannerFinal = new ImageIcon(img);
-                    SwingUtilities.invokeLater(() -> {
-                        fotoBanner.setIcon(bannerFinal);
-                        bannerContainer.setOpaque(false);
-                    });
+                    Image img = orig.getImage().getScaledInstance(1100, 250, Image.SCALE_SMOOTH);
+                    iconBannerFinal = new ImageIcon(img);
                 }
 
-                // Processa os Ícones dos Cards
+                // Carregamento ultra rápido dos ícones em lote
                 ImageIcon ic1 = redimensionarIconeEficaz("/imagens/pessoas.png", 30, 30);
                 ImageIcon ic2 = redimensionarIconeEficaz("/imagens/adicionarPessoas.png", 30, 30);
                 ImageIcon ic3 = redimensionarIconeEficaz("/imagens/relatorioat.png", 30, 30);
 
-                // Processa os Ícones dos Relatórios
                 ImageIcon ir1 = redimensionarIconeEficaz("/imagens/pessoas.png", 22, 22);
                 ImageIcon ir2 = redimensionarIconeEficaz("/imagens/cifrao.png", 22, 22);
                 ImageIcon ir3 = redimensionarIconeEficaz("/imagens/relatorio.jpg", 22, 22);
 
+                // 🔥 AJUSTADO AQUI: Chamadas sincronizadas com o InicioController padrão
+                int totalAssociados = inicioController.obterTotalAssociados();
+                int cadastrosMes = inicioController.obterCadastrosMes();
+                int relatoriosMes = inicioController.obterRelatoriosMes();
+
+                // Entrega dos dados montados de forma síncrona com a UI (sem causar gargalos)
+                final ImageIcon bannerFinal = iconBannerFinal;
                 SwingUtilities.invokeLater(() -> {
+                    if (bannerFinal != null) {
+                        fotoBanner.setIcon(bannerFinal);
+                        bannerContainer.setOpaque(false);
+                    }
+
                     if (ic1 != null) lblIconeCard1.setIcon(ic1);
                     if (ic2 != null) lblIconeCard2.setIcon(ic2);
                     if (ic3 != null) lblIconeCard3.setIcon(ic3);
@@ -141,9 +109,14 @@ public class PainelInicio extends JPanel {
                     if (ir1 != null) lblIconeRel1.setIcon(ir1);
                     if (ir2 != null) lblIconeRel2.setIcon(ir2);
                     if (ir3 != null) lblIconeRel3.setIcon(ir3);
+
+                    lblContadorAssociados.setText(String.valueOf(totalAssociados));
+                    lblContadorCadastros.setText(String.valueOf(cadastrosMes));
+                    lblContadorRelatorios.setText(String.valueOf(relatoriosMes));
                 });
+
             } catch (Exception e) {
-                System.out.println("Erro no processamento de imagens: " + e.getMessage());
+                System.out.println("Erro na carga paralela do painel: " + e.getMessage());
             }
         }).start();
     }
@@ -157,6 +130,25 @@ public class PainelInicio extends JPanel {
             }
         } catch (Exception e) {}
         return null;
+    }
+
+    public void recarregarDadosBanco() {
+        new Thread(() -> {
+            try {
+                // 🔥 AJUSTADO AQUI TAMBÉM: Igualando as chamadas de método
+                int totalAssociados = inicioController.obterTotalAssociados();
+                int cadastrosMes = inicioController.obterCadastrosMes();
+                int relatoriosMes = inicioController.obterRelatoriosMes();
+
+                SwingUtilities.invokeLater(() -> {
+                    lblContadorAssociados.setText(String.valueOf(totalAssociados));
+                    lblContadorCadastros.setText(String.valueOf(cadastrosMes));
+                    lblContadorRelatorios.setText(String.valueOf(relatoriosMes));
+                });
+            } catch (Exception e) {
+                System.out.println("Erro ao atualizar dados: " + e.getMessage());
+            }
+        }).start();
     }
 
     private void criarBanner() {
@@ -185,7 +177,7 @@ public class PainelInicio extends JPanel {
         texto1.setFont(new Font("Segoe UI", Font.BOLD, 26));
         texto1.setBounds(40, 35, 600, 110);
 
-        JLabel texto2 = new JLabel("Gestão eficiente • Participação ativa • Futuro melhor.");
+        JLabel texto2 = new JLabel("Gestão eficiente • Participação activa • Futuro melhor.");
         texto2.setForeground(Color.WHITE);
         texto2.setFont(new Font("Segoe UI", Font.PLAIN, 17));
         texto2.setBounds(40, 155, 600, 30);

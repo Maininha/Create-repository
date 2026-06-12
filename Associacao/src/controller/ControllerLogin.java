@@ -17,6 +17,7 @@ public class ControllerLogin {
     }
 
     private void eventos() {
+
         view.getBtEntrar().addActionListener(e -> autenticar());
         view.getBtLimpar().addActionListener(e -> view.limparCampos());
     }
@@ -35,15 +36,13 @@ public class ControllerLogin {
         Usuario u = dao.autenticar(cpf, senha);
 
         if (u != null) {
-            // ❌ REMOVIDO: view.exibirMensagem("Login realizado com sucesso!");
-            // Agora o sistema passa direto sem travar o usuário com um clique extra!
+            view.exibirMensagem("Login realizado com sucesso!");
 
             view.dispose();
 
             new ControllerPrincipal();
 
         } else {
-            // MANTIDO: O aviso só aparece em caso de erro
             view.exibirMensagem("CPF ou senha inválidos!");
         }
     }

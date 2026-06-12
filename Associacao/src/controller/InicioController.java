@@ -28,10 +28,10 @@ public class InicioController {
     }
 
     /**
+     * CORREÇÃO: Nome alterado para bater com a chamada do PainelInicio
      * Retorna a quantidade de novos cadastros realizados no mês atual.
-     * Tabela: 'associados' (Plural)
      */
-    public int obterCadastrosDoMes() {
+    public int obterCadastrosMes() {
         String sql = "SELECT COUNT(*) FROM associados WHERE MONTH(data_cadastro) = MONTH(CURRENT_DATE) AND YEAR(data_cadastro) = YEAR(CURRENT_DATE)";
         try (Connection conn = Conexao.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
@@ -46,10 +46,10 @@ public class InicioController {
     }
 
     /**
+     * CORREÇÃO: Nome alterado para bater com a chamada do PainelInicio
      * Retorna a quantidade de relatórios oficiais salvos no mês atual.
-     * Tabela: 'relatorio' (Singular)
      */
-    public int obterRelatoriosDoMes() {
+    public int obterRelatoriosMes() {
         String sql = "SELECT COUNT(*) FROM relatorio WHERE MONTH(data_geracao) = MONTH(CURRENT_DATE) AND YEAR(data_geracao) = YEAR(CURRENT_DATE)";
         try (Connection conn = Conexao.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);

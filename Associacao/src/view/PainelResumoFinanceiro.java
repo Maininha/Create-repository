@@ -186,32 +186,28 @@ public class PainelResumoFinanceiro extends JPanel {
         return abaFin;
     }
 
-    // 🛠️ MENSAGEM DO ERRO REPARADA: Chamadas normalizadas estritamente para o seu método em português
     private void acionarGeracaoPDF() {
         String itemSelecionado = (String) cbPeriodo.getSelectedItem();
         Calendar calendar = Calendar.getInstance();
-        Date dataFim = calendar.getTime(); // Data final é o momento atual
+        Date dataFim = calendar.getTime();
         Date dataInicio;
 
-        // Define a data inicial baseado no escopo escolhido no JComboBox
         if ("Últimos 30 dias".equals(itemSelecionado)) {
             calendar.add(Calendar.DAY_OF_YEAR, -30);
             dataInicio = calendar.getTime();
         } else if ("Este ano".equals(itemSelecionado)) {
             calendar.set(Calendar.DAY_OF_YEAR, 1);
             dataInicio = calendar.getTime();
-        } else { // "Este mês"
+        } else {
             calendar.set(Calendar.DAY_OF_MONTH, 1);
             dataInicio = calendar.getTime();
         }
 
-        // 1. Obtém os valores consolidados calculados pelo Controller do seu sistema
         Relatorio relatorioAtual = relatorioController.generateRelatorioPorPeriodo(dataInicio, dataFim, "Mensal");
         if (relatorioAtual == null) {
             relatorioAtual = relatorioController.gerarRelatorioPorPeriodo(dataInicio, dataFim, "Mensal");
         }
 
-        // 2. Grava as informações processadas na sua tabela 'relatorio' do banco de dados
         if (relatorioAtual != null) {
             boolean salvoComSucesso = financeiroDAO.salvarRelatorioNoBanco(
                     dataInicio,
@@ -228,13 +224,13 @@ public class PainelResumoFinanceiro extends JPanel {
             }
         }
 
-        // 3. Executa a exportação visual chamando estritamente o seu método 'gerarRelatorioFinanceiro'
         List<Financeiro> movimentacoesPeriodo = financeiroDAO.listar("Todos", dataInicio, dataFim);
         if (movimentacoesPeriodo != null) {
             GeradorPdfRelatorio.gerarRelatorioFinanceiro(movimentacoesPeriodo);
         }
     }
 
+    // ================= MÉTODO REPARADO E ATUALIZADO =================
     public void recarregarDadosBanco() {
         String itemSelecionado = (String) cbPeriodo.getSelectedItem();
         Calendar calendar = Calendar.getInstance();
@@ -273,15 +269,32 @@ public class PainelResumoFinanceiro extends JPanel {
         List<Financeiro> listaMovimentos = financeiroDAO.listar("Todos", dataInicio, dataFim);
         SimpleDateFormat formatoData = new SimpleDateFormat("dd/MM/yyyy");
 
-        for (Financeiro f : listaMovimentos) {
-            modelMov.addRow(new Object[]{
-                    " " + formatoData.format(f.getData()),
-                    " " + f.getTipo(),
-                    String.format("R$ %.2f ", f.getValor())
-            });
+        if (listaMovimentos != null) {
+            for (Financeiro f : listaMovimentos) {
+                modelMov.addRow(new Object[]{
+                        " " + formatoData.format(f.getData()),
+                        " " + f.getTipo(),
+                        String.format("R$ %.2f ", f.getValor())
+                });
+            }
         }
 
-        // Força a interface de usuário a se redesenhar com os valores novos do banco
+        // 🔥 CORREÇÃO: Força o Swing a redesenhar as tabelas e os viewports dos JScrollPanes
+        tableResumo.revalidate();
+        tableResumo.repaint();
+        tableMov.revalidate();
+        tableMov.repaint();
+
+        if (tableResumo.getParent() != null) {
+            tableResumo.getParent().revalidate();
+            tableResumo.getParent().repaint();
+        }
+        if (tableMov.getParent() != null) {
+            tableMov.getParent().revalidate();
+            tableMov.getParent().repaint();
+        }
+
+        // Força a interface de usuário geral a se reajustar na tela
         revalidate();
         repaint();
     }

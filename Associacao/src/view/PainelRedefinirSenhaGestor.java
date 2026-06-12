@@ -12,18 +12,18 @@ public class PainelRedefinirSenhaGestor extends JPanel {
     private JButton btnAtualizar;
     private JLabel lbTitulo;
     private JLabel lbAviso;
-    private JLabel lblVoltar; // 🔥 Novo componente para o link de retorno
+    private JLabel lblVoltar;
 
     public PainelRedefinirSenhaGestor() {
-        setLayout(null);
+        // 🔥 CORREÇÃO: GridBagLayout centraliza qualquer componente filho automaticamente
+        setLayout(new GridBagLayout());
         setBackground(new Color(233, 226, 218));
 
-        // Aumentamos sutilmente a altura do card (de 450 para 480)
-        // para dar espaço ao link "Voltar" respirar sem espremer o layout
+        // Mantemos o tamanho fixo interno do seu card (480x480)
         JPanel boxFormulario = new JPanel();
         boxFormulario.setLayout(null);
         boxFormulario.setBackground(Color.WHITE);
-        boxFormulario.setBounds(110, 15, 480, 480);
+        boxFormulario.setPreferredSize(new Dimension(480, 480)); // Mudado para PreferredSize para o Layout respeitar
         boxFormulario.setBorder(new LineBorder(new Color(215, 205, 190), 1, true));
 
         // Título
@@ -110,28 +110,28 @@ public class PainelRedefinirSenhaGestor extends JPanel {
         });
         boxFormulario.add(btnAtualizar);
 
-        // 🔥 LINK: Voltar para o Login
+        // LINK: Voltar para o Login
         lblVoltar = new JLabel("<html><u>Voltar para o Login</u></html>");
         lblVoltar.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        lblVoltar.setForeground(new Color(110, 70, 20)); // Mesmo marrom discreto do outro link
+        lblVoltar.setForeground(new Color(110, 70, 20));
         lblVoltar.setCursor(new Cursor(Cursor.HAND_CURSOR));
         lblVoltar.setBounds(0, 442, 480, 25);
         lblVoltar.setHorizontalAlignment(SwingConstants.CENTER);
 
-        // Efeito Hover sutil no link de voltar
         lblVoltar.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseEntered(java.awt.event.MouseEvent e) {
-                lblVoltar.setForeground(new Color(185, 120, 30)); // Dourado ao passar o mouse
+                lblVoltar.setForeground(new Color(185, 120, 30));
             }
             @Override
             public void mouseExited(java.awt.event.MouseEvent e) {
-                lblVoltar.setForeground(new Color(110, 70, 20)); // Retorna à cor original
+                lblVoltar.setForeground(new Color(110, 70, 20));
             }
         });
         boxFormulario.add(lblVoltar);
 
-        add(boxFormulario);
+        // 🔥 O truque do GridBagLayout injeta o card exatamente no meio da tela limpa
+        add(boxFormulario, new GridBagConstraints());
     }
 
     // Getters
@@ -139,5 +139,5 @@ public class PainelRedefinirSenhaGestor extends JPanel {
     public JPasswordField getTxtNovaSenha() { return txtNovaSenha; }
     public JPasswordField getTxtConfirmarNovaSenha() { return txtConfirmarNovaSenha; }
     public JButton getBtnAtualizar() { return btnAtualizar; }
-    public JLabel getLblVoltar() { return lblVoltar; } // 🔥 Importante para a ação de clique voltar
+    public JLabel getLblVoltar() { return lblVoltar; }
 }
