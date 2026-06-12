@@ -4,19 +4,19 @@ import java.util.Date;
 
     public class Financeiro {
 
-        // Atributos privados baseados no Diagrama de Classes e Banco de Dados
+
         private int idMov;
         private Date data;
         private double valor;
-        private String desc; // Descrição da movimentação
-        private String cat;  // Categoria / Classificação
-        private String tipo; // "Entrada" ou "Saída"
+        private String desc;
+        private String cat;
+        private String tipo;
 
-        // Construtor Vazio (Necessário para instanciar e setar os dados aos poucos)
+
         public Financeiro() {
         }
 
-        // Construtor Completo (Útil para quando buscar dados do banco)
+
         public Financeiro(int idMov, Date data, double valor, String desc, String cat, String tipo) {
             this.idMov = idMov;
             this.data = data;
@@ -26,7 +26,6 @@ import java.util.Date;
             this.tipo = tipo;
         }
 
-        // ================= GETTERS E SETTERS =================
 
         public int getIdMov() {
             return idMov;
@@ -76,7 +75,7 @@ import java.util.Date;
             this.tipo = tipo;
         }
 
-        // Método opcional útil para ajudar em testes de console (System.out.println)
+
         @Override
         public String toString() {
             return "Financeiro{" +

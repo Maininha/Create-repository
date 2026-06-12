@@ -7,7 +7,7 @@ import java.util.ArrayList;
 
 public class AssociadoDAO {
 
-    // ================= MÉTODO DE VALIDAÇÃO DE DUPLICIDADE =================
+
     public boolean existeCpf(String cpf) {
         String sql = "SELECT COUNT(*) FROM associados WHERE cpf = ?";
         String cpfTratado = cpf.replaceAll("[^0-9]", "").trim();
@@ -29,7 +29,7 @@ public class AssociadoDAO {
         return false;
     }
 
-    // ================= CRIPTOGRAFIA SHA-256 =================
+
     private String criptografarSenha(String senhaOriginal) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -47,7 +47,7 @@ public class AssociadoDAO {
         }
     }
 
-    // ================= LISTAR ASSOCIADOS (ON a.id_endereco = e.id) =================
+
     public ArrayList<Associado> listar() {
         ArrayList<Associado> lista = new ArrayList<>();
         String sql = "SELECT a.cpf, a.nome, a.data_cadastro, a.tipo_perfil, " +
@@ -83,7 +83,7 @@ public class AssociadoDAO {
         return lista;
     }
 
-    // ================= BUSCAR POR CPF =================
+
     public Associado buscarPorCpf(String cpf) {
         String sql = "SELECT a.cpf, a.nome, a.data_cadastro, a.tipo_perfil, " +
                 "e.logradouro, e.cidade, e.estado, e.referencia " +
@@ -123,7 +123,7 @@ public class AssociadoDAO {
         return null;
     }
 
-    // ================= EXCLUIR REGISTRO =================
+
     public boolean excluir(String cpf) {
         String sqlDeleteAssociado = "DELETE FROM associados WHERE cpf = ?";
         String sqlDeleteEndereco = "DELETE FROM enderecos WHERE id = ?";
@@ -150,13 +150,13 @@ public class AssociadoDAO {
                 }
             }
 
-            // Remove o associado primeiro (por causa do vínculo da FK)
+
             try (PreparedStatement stmt = conn.prepareStatement(sqlDeleteAssociado)) {
                 stmt.setString(1, cpfTratado);
                 stmt.executeUpdate();
             }
 
-            // Remove o endereço vinculado
+
             if (idEndereco > 0) {
                 try (PreparedStatement stmt = conn.prepareStatement(sqlDeleteEndereco)) {
                     stmt.setInt(1, idEndereco);
@@ -164,7 +164,7 @@ public class AssociadoDAO {
                 }
             }
 
-            // Remove o usuário associado (se houver credencial de login)
+
             if (idUsuario > 0) {
                 try (PreparedStatement stmt = conn.prepareStatement(sqlDeleteUsuario)) {
                     stmt.setInt(1, idUsuario);
@@ -188,7 +188,7 @@ public class AssociadoDAO {
         }
     }
 
-    // ================= ATUALIZAR DADOS COMPLETOS =================
+
     public boolean atualizarCompleto(Associado associado) {
         String sqlBuscarEndereco = "SELECT id_endereco FROM associados WHERE cpf = ?";
         String sqlUpdateAssociado = "UPDATE associados SET nome = ? WHERE cpf = ?";
@@ -245,7 +245,7 @@ public class AssociadoDAO {
         }
     }
 
-    // ================= INSERIR NOVO ASSOCIADO =================
+
     public boolean inserir(Usuario usuario) {
         String sqlEndereco = "INSERT INTO enderecos (cidade, estado, referencia, logradouro) VALUES (?, ?, ?, ?)";
         String sqlUsuario = "INSERT INTO usuario (cpf, senha) VALUES (?, ?)";

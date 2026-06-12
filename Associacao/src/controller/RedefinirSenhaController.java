@@ -13,11 +13,11 @@ public class RedefinirSenhaController {
         this.tela = tela;
         this.dao = new UsuarioDAO();
 
-        // 🔥 A expressão lambda chama o método abaixo
+
         this.tela.getBtnAtualizar().addActionListener(e -> executarRedefinicao());
     }
 
-    // 🔥 Certifique-se de que o nome está idêntico e o método é 'private void'
+
     private void executarRedefinicao() {
         String cpf = tela.getTxtCpf().getText().trim();
         String novaSenha = new String(tela.getTxtNovaSenha().getPassword());

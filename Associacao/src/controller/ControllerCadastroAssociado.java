@@ -78,13 +78,13 @@ public class ControllerCadastroAssociado {
             return;
         }
 
-        // Padroniza removendo pontos e traços
+
         String cpf = cpfRaw.replaceAll("[^0-9]", "");
         if (cpf.length() > 11) {
             cpf = cpf.substring(0, 11);
         }
 
-        // CORREÇÃO CRÍTICA [RF003]: Validação do formato e estrutura matemática do CPF
+
         if (cpf.length() != 11 || cpf.matches("(\\d)\\1{10}")) {
             JOptionPane.showMessageDialog(
                     telaCadastro,

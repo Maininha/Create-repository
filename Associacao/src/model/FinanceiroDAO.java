@@ -19,7 +19,7 @@ public class FinanceiroDAO {
 
             stmt.setTimestamp(1, new Timestamp(financeiro.getData().getTime()));
 
-            // 🛠️ BLINDAGEM: Garante que o banco NUNCA armazene sinais de menos ou mais. Sempre salva o valor absoluto.
+
             stmt.setDouble(2, Math.abs(financeiro.getValor()));
 
             stmt.setString(3, financeiro.getDesc());
@@ -35,7 +35,7 @@ public class FinanceiroDAO {
     }
 
     public List<Financeiro> listar(String tipoFiltro, java.util.Date dataInicio, java.util.Date dataFim) {
-        // 🛠️ CORREÇÃO DE DADOS LEGADOS: O uso de ABS(valor) na Query limpa em tempo real os registros poluídos antigos (ex: -10000,00 vira 10000,00)
+
         StringBuilder sql = new StringBuilder(
                 "SELECT id_mov, data_mov, ABS(valor) AS valor_limpo, descricao, categoria, tipo FROM financeiro WHERE 1=1"
         );
@@ -86,7 +86,7 @@ public class FinanceiroDAO {
                     f.setIdMov(rs.getInt("id_mov"));
                     f.setData(rs.getTimestamp("data_mov"));
 
-                    // Recupera o valor devidamente higienizado pelo banco de dados
+
                     f.setValor(rs.getDouble("valor_limpo"));
 
                     f.setDesc(rs.getString("descricao"));
@@ -111,7 +111,7 @@ public class FinanceiroDAO {
 
             stmt.setTimestamp(1, new Timestamp(financeiro.getData().getTime()));
 
-            // 🛠️ BLINDAGEM: Impede a inserção de sinais negativos também durante as edições/atualizações
+
             stmt.setDouble(2, Math.abs(financeiro.getValor()));
 
             stmt.setString(3, financeiro.getDesc());
@@ -142,6 +142,5 @@ public class FinanceiroDAO {
         }
     }
 
-    // 🛠️ REMOÇÃO ARQUITETURAL: O método 'salvarRelatorioNoBanco' foi removido deste DAO,
-    // pois a responsabilidade de gerenciar a tabela 'relatorio' pertence unicamente à classe RelatorioDAO.
+
 }

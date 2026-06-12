@@ -8,7 +8,7 @@ import java.nio.charset.StandardCharsets;
 
 public class UsuarioDAO {
 
-    // ================= FUNÇÃO AUXILIAR SHA-256 (REQUISITO DE SEGURANÇA) =================
+
     private String criptografarSenha(String senhaOriginal) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -26,7 +26,7 @@ public class UsuarioDAO {
         }
     }
 
-    // ================= 🛠️ MÉTODO AUTENTICAR SEGURO =================
+
     public Usuario autenticar(String cpf, String senhaDigitada) {
         // Criptografa a senha que o usuário digitou na tela para comparar com o hash do banco
         String senhaCriptografada = criptografarSenha(senhaDigitada);
@@ -50,7 +50,7 @@ public class UsuarioDAO {
         return null;
     }
 
-    // ================= 🛠️ MÉTODO REDEFINIR SENHA CRIPTOGRAFADO =================
+
     public int redefinirSenha(String cpf, String novaSenha) {
         String sqlVerificar = "SELECT cpf FROM usuario WHERE cpf = ?";
         String sqlAtualizar = "UPDATE usuario SET senha = ? WHERE cpf = ?";
@@ -60,22 +60,22 @@ public class UsuarioDAO {
         try (Connection conn = Conexao.getConnection()) {
             conn.setAutoCommit(true);
 
-            // 1. Validar se o CPF existe
+
             try (PreparedStatement stmtCheck = conn.prepareStatement(sqlVerificar)) {
                 stmtCheck.setString(1, cpf);
                 try (ResultSet rs = stmtCheck.executeQuery()) {
                     if (!rs.next()) {
                         System.out.println("[DAO] Erro: O CPF " + cpf + " não existe na tabela.");
-                        return 0; // CPF não encontrado
+                        return 0;
                     }
                 }
             }
 
-            // 2. Aplica a criptografia exigida nos requisitos do projeto
+
             String novaSenhaCriptografada = criptografarSenha(novaSenha);
             System.out.println("[DAO] Senha convertida para SHA-256: " + novaSenhaCriptografada);
 
-            // 3. Executar a alteração no banco de dados
+
             try (PreparedStatement stmtUpdate = conn.prepareStatement(sqlAtualizar)) {
                 stmtUpdate.setString(1, novaSenhaCriptografada);
                 stmtUpdate.setString(2, cpf);

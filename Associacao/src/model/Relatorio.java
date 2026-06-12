@@ -26,13 +26,11 @@ public class Relatorio {
         System.out.println("Relatório Anual Processado.");
     }
 
-    /**
-     * Gera um arquivo de relatório financeiro real em formato HTML/PDF
-     */
+
     public void emitirPDF() {
         System.out.println("Exportando para PDF...");
 
-        // Janela para o usuário escolher onde quer salvar o relatório
+
         JFileChooser salvarArquivo = new JFileChooser();
         salvarArquivo.setDialogTitle("Salvar Relatório Financeiro");
         salvarArquivo.setSelectedFile(new File("Relatorio_Financeiro.html")); // Extensão amigável para navegadores
@@ -43,7 +41,7 @@ public class Relatorio {
             File arquivo = salvarArquivo.getSelectedFile();
             SimpleDateFormat formatador = new SimpleDateFormat("dd/MM/yyyy");
 
-            // Construindo um layout bonito em HTML que abre em qualquer navegador e aceita impressão direta em PDF
+
             String conteudoHTML = "<html>"
                     + "<head>"
                     + "<style>"
@@ -80,7 +78,7 @@ public class Relatorio {
                 escritor.write(conteudoHTML);
                 escritor.flush();
 
-                // Abre o arquivo gerado automaticamente no navegador padrão do usuário
+
                 if (Desktop.isDesktopSupported()) {
                     Desktop.getDesktop().open(arquivo);
                 }
@@ -91,7 +89,7 @@ public class Relatorio {
         }
     }
 
-    // GETTERS E SETTERS
+
     public Date getPeriodoInicial() { return periodoInicial; }
     public void setPeriodoInicial(Date periodoInicial) { this.periodoInicial = periodoInicial; }
     public Date getPeriodoFinal() { return periodoFinal; }

@@ -9,10 +9,7 @@ import java.sql.Date; // Import necessário para manipular as datas do banco
 
 public class InicioController {
 
-    /**
-     * Retorna a quantidade total de associados cadastrados.
-     * Tabela: 'associados' (Plural)
-     */
+
     public int obterTotalAssociados() {
         String sql = "SELECT COUNT(*) FROM associados";
         try (Connection conn = Conexao.getConnection();
@@ -27,10 +24,7 @@ public class InicioController {
         return 0;
     }
 
-    /**
-     * CORREÇÃO: Nome alterado para bater com a chamada do PainelInicio
-     * Retorna a quantidade de novos cadastros realizados no mês atual.
-     */
+
     public int obterCadastrosMes() {
         String sql = "SELECT COUNT(*) FROM associados WHERE MONTH(data_cadastro) = MONTH(CURRENT_DATE) AND YEAR(data_cadastro) = YEAR(CURRENT_DATE)";
         try (Connection conn = Conexao.getConnection();
@@ -45,10 +39,7 @@ public class InicioController {
         return 0;
     }
 
-    /**
-     * CORREÇÃO: Nome alterado para bater com a chamada do PainelInicio
-     * Retorna a quantidade de relatórios oficiais salvos no mês atual.
-     */
+
     public int obterRelatoriosMes() {
         String sql = "SELECT COUNT(*) FROM relatorio WHERE MONTH(data_geracao) = MONTH(CURRENT_DATE) AND YEAR(data_geracao) = YEAR(CURRENT_DATE)";
         try (Connection conn = Conexao.getConnection();
@@ -63,9 +54,6 @@ public class InicioController {
         return 0;
     }
 
-    /**
-     * Faz o INSERT real dos dados calculados na tabela 'relatorio' do MySQL.
-     */
     public boolean cadastrarRelatorio(String dataInicial, String dataFinal, double totalEntradas, double totalSaidas, double saldoFinal) {
         String sql = "INSERT INTO relatorio (periodo_inicial, periodo_final, total_entradas, total_saidas, saldo_final) VALUES (?, ?, ?, ?, ?)";
 

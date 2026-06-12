@@ -13,13 +13,13 @@ public class ControllerPrincipal {
 
     public ControllerPrincipal() {
 
-        // 1. Instancia a tela oficial do sistema
+
         tela = new TelaPrincipal();
 
-        // 2. Cria o DAO necessário para os dados de associados
+
         AssociadoDAO associadoDao = new AssociadoDAO();
 
-        // 3. Inicializa o Controller responsável pela lógica de gravação do formulário
+
         if (tela.getPainelCadastro() != null && tela.getPainelSenha() != null) {
             new ControllerCadastroAssociado(
                     tela,
@@ -29,16 +29,16 @@ public class ControllerPrincipal {
             );
         }
 
-        // 4. Configura os eventos complementares
+
         eventos();
 
-        // 5. Exibe a tela após tudo configurado e acoplado com segurança
+
         tela.setVisible(true);
     }
 
     private void eventos() {
 
-        // Executa a listagem de dados fora da EDT em uma Thread paralela para evitar travamento
+
         tela.getBtAssociados().addActionListener(e -> {
             new Thread(() -> {
                 if (tela.getControllerListar() != null) {
@@ -47,12 +47,12 @@ public class ControllerPrincipal {
             }).start();
         });
 
-        // Evento customizado para o menu Financeiro
+
         tela.getBtFinanceiro().addActionListener(e -> {
             System.out.println("Aba Movimentação Financeira acessada pelo usuário.");
         });
 
-        // Evento de clique para o botão de Desconexão (Sair)
+
         tela.getBtSair().addActionListener(e -> {
 
             int opcao = JOptionPane.showConfirmDialog(

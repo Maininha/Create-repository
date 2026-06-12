@@ -22,10 +22,10 @@ public class RelatorioController {
         relatorio.setPeriodoInicial(inicio);
         relatorio.setPeriodoFinal(fim);
 
-        // Calcula entradas, saídas e saldo de forma otimizada no banco
+
         relatorioDAO.preencherDadosFinanceiros(relatorio);
 
-        // Salva no histórico da tabela relatorio
+
         relatorioDAO.salvarNoBanco(relatorio);
 
         return relatorio;
@@ -39,10 +39,6 @@ public class RelatorioController {
         relatorio.emitirPDF();
     }
 
-    /**
-     * 🔥 ALINHAMENTO DE ARQUITETURA: Agora utiliza o GeradorPdfRelatorio nativo (OpenPDF)
-     * mantendo a paleta de cores marrom/dourada e rodando em background seguro.
-     */
     public void exportarHistoricoAtividadesPDF(List<Atividade> listaAtividades, JButton botaoGatilho) {
         if (botaoGatilho != null) {
             botaoGatilho.setEnabled(false);

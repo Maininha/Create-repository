@@ -37,7 +37,7 @@ public class ControllerListarAssociado {
         painel.limparTabela();
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
 
-        // Captura o ArrayList compatível retornado pelo DAO
+
         ArrayList<Associado> listaAssociados = dao.listar();
         if (listaAssociados == null) return;
 
@@ -70,9 +70,7 @@ public class ControllerListarAssociado {
             editar.getBtnCancelar().removeActionListener(al);
         }
 
-        // ===================================
-        // AÇÕES DA TABELA DE VISUALIZAÇÃO
-        // ===================================
+
         painel.setAcoesListener(new PainelAssociados.AcoesListener() {
 
             @Override
@@ -142,9 +140,7 @@ public class ControllerListarAssociado {
             }
         });
 
-        // =========================
-        // BOTÃO SALVAR (EDIÇÃO)
-        // =========================
+
         editar.getBtnSalvar().addActionListener(e -> {
             String cpf = editar.getTxtCpf().getText();
             String nome = editar.getTxtNome().getText();
@@ -192,9 +188,7 @@ public class ControllerListarAssociado {
             }
         });
 
-        // =========================
-        // CANCELAR EDIÇÃO
-        // =========================
+
         editar.getBtnCancelar().addActionListener(e -> {
             frame.getCard().show(
                     frame.getPainelConteudo(),

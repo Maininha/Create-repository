@@ -66,15 +66,14 @@ public class FinanceiroController {
         BigDecimal valor;
         Date dataMov;
         try {
-            // 🛠️ BLINDAGEM CONTRA MULTIPLICAÇÃO:
-            // Remove símbolos e espaços
+
             String valorLimpo = valorStr.replace("R$", "").trim();
 
-            // Caso contenha os dois separadores (ex: 1.000,00)
+
             if (valorLimpo.contains(",") && valorLimpo.contains(".")) {
                 valorLimpo = valorLimpo.replace(".", "").replace(",", ".");
             }
-            // Caso contenha apenas a vírgula brasileira (ex: 1000,00)
+
             else if (valorLimpo.contains(",")) {
                 valorLimpo = valorLimpo.replace(",", ".");
             }

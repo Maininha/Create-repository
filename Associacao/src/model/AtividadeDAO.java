@@ -13,7 +13,7 @@ public class AtividadeDAO {
     public List<Atividade> buscarHistoricoRecente() {
         List<Atividade> lista = new ArrayList<>();
 
-        // CORRIGIDO: Alterado 'FROM associado' para 'FROM associados' (no plural)
+
         String sql = "SELECT data_cadastro AS data_hora, 'Associados' AS categoria, "
                 + "CONCAT('Novo associado cadastrado: ', nome) AS descricao FROM associados " // <-- CORREÇÃO AQUI
                 + "UNION "
@@ -21,7 +21,7 @@ public class AtividadeDAO {
                 + "CONCAT('Movimentação de ', tipo, ' - R$ ', valor) AS descricao FROM financeiro "
                 + "ORDER BY data_hora DESC LIMIT 50";
 
-        // NOTA: Se der erro na palavra 'Conexao', mude para o nome da sua classe de banco (ex: ConnectionFactory)
+
         try (Connection conn = Conexao.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
