@@ -3,39 +3,61 @@ package model;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.security.MessageDigest;
+import java.nio.charset.StandardCharsets;
 
 public class UsuarioDAO {
 
-    // Seu método autenticar (mantido intacto)
-    public Usuario autenticar(String cpf, String senha) {
+    // ================= FUNÇÃO AUXILIAR SHA-256 (REQUISITO DE SEGURANÇA) =================
+    private String criptografarSenha(String senhaOriginal) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(senhaOriginal.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) hexString.append('0');
+                hexString.append(hex);
+            }
+            return hexString.toString(); // Retorna sempre uma string de 64 caracteres
+        } catch (Exception e) {
+            System.err.println("[DAO] Erro ao criptografar senha.");
+            return senhaOriginal;
+        }
+    }
+
+    // ================= 🛠️ MÉTODO AUTENTICAR SEGURO =================
+    public Usuario autenticar(String cpf, String senhaDigitada) {
+        // Criptografa a senha que o usuário digitou na tela para comparar com o hash do banco
+        String senhaCriptografada = criptografarSenha(senhaDigitada);
         String sql = "SELECT * FROM usuario WHERE cpf = ? AND senha = ?";
+
         try (Connection conn = Conexao.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             stmt.setString(1, cpf);
-            stmt.setString(2, senha);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                return new Usuario(rs.getString("cpf"), rs.getString("senha"));
+            stmt.setString(2, senhaCriptografada);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return new Usuario(rs.getString("cpf"), rs.getString("senha"));
+                }
             }
         } catch (Exception e) {
+            System.err.println("[DAO] Erro ao autenticar usuário com SHA-256:");
             e.printStackTrace();
         }
         return null;
     }
 
-    /**
-     * Versão corrigida e monitorada do método de redefinição
-     */
+    // ================= 🛠️ MÉTODO REDEFINIR SENHA CRIPTOGRAFADO =================
     public int redefinirSenha(String cpf, String novaSenha) {
-        // 🔥 ATENÇÃO: Verifique se na sua tabela o nome é 'usuario', 'senha' e 'cpf' mesmo!
         String sqlVerificar = "SELECT cpf FROM usuario WHERE cpf = ?";
         String sqlAtualizar = "UPDATE usuario SET senha = ? WHERE cpf = ?";
 
-        System.out.println("[DAO] Iniciando redefinição para o CPF: " + cpf);
+        System.out.println("[DAO] Iniciando redefinição criptografada para o CPF: " + cpf);
 
         try (Connection conn = Conexao.getConnection()) {
-
-            // Garantir que as alterações sejam salvas imediatamente no banco
             conn.setAutoCommit(true);
 
             // 1. Validar se o CPF existe
@@ -49,11 +71,13 @@ public class UsuarioDAO {
                 }
             }
 
-            System.out.println("[DAO] CPF confirmado. Atualizando senha...");
+            // 2. Aplica a criptografia exigida nos requisitos do projeto
+            String novaSenhaCriptografada = criptografarSenha(novaSenha);
+            System.out.println("[DAO] Senha convertida para SHA-256: " + novaSenhaCriptografada);
 
-            // 2. Executar a alteração da senha
+            // 3. Executar a alteração no banco de dados
             try (PreparedStatement stmtUpdate = conn.prepareStatement(sqlAtualizar)) {
-                stmtUpdate.setString(1, novaSenha);
+                stmtUpdate.setString(1, novaSenhaCriptografada);
                 stmtUpdate.setString(2, cpf);
 
                 int linhasAfetadas = stmtUpdate.executeUpdate();
@@ -65,9 +89,9 @@ public class UsuarioDAO {
             }
 
         } catch (Exception e) {
-            System.err.println("[DAO] Exceção disparada no banco de dados:");
+            System.err.println("[DAO] Exceção no banco de dados durante redefinição:");
             e.printStackTrace();
-            return -1; // Erro de SQL/Conexão
+            return -1;
         }
 
         return 0;

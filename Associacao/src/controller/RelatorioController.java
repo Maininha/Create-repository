@@ -3,11 +3,9 @@ package controller;
 import model.Atividade;
 import model.Relatorio;
 import model.RelatorioDAO;
+import util.GeradorPdfRelatorio;
 
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import java.text.MessageFormat;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
@@ -20,13 +18,11 @@ public class RelatorioController {
     }
 
     public Relatorio gerarRelatorioPorPeriodo(Date inicio, Date fim, String tipo) {
-
         Relatorio relatorio = new Relatorio();
-
         relatorio.setPeriodoInicial(inicio);
         relatorio.setPeriodoFinal(fim);
 
-        // Calcula entradas, saídas e saldo
+        // Calcula entradas, saídas e saldo de forma otimizada no banco
         relatorioDAO.preencherDadosFinanceiros(relatorio);
 
         // Salva no histórico da tabela relatorio
@@ -35,72 +31,54 @@ public class RelatorioController {
         return relatorio;
     }
 
-    public Relatorio generateRelatorioPorPeriodo(Date inicio, Date fim, String tipo) {
-        return gerarRelatorioPorPeriodo(inicio, fim, tipo);
-    }
-
     public void exportarPDF(Relatorio relatorio) {
-
         if (relatorio == null) {
-            JOptionPane.showMessageDialog(
-                    null,
-                    "Nenhum relatório foi gerado.",
-                    "Aviso",
-                    JOptionPane.WARNING_MESSAGE
-            );
+            JOptionPane.showMessageDialog(null, "Nenhum relatório foi gerado.", "Aviso", JOptionPane.WARNING_MESSAGE);
             return;
         }
-
         relatorio.emitirPDF();
     }
 
-    public void exportarHistoricoAtividadesPDF(List<Atividade> listaAtividades) {
+    /**
+     * 🔥 ALINHAMENTO DE ARQUITETURA: Agora utiliza o GeradorPdfRelatorio nativo (OpenPDF)
+     * mantendo a paleta de cores marrom/dourada e rodando em background seguro.
+     */
+    public void exportarHistoricoAtividadesPDF(List<Atividade> listaAtividades, JButton botaoGatilho) {
+        if (botaoGatilho != null) {
+            botaoGatilho.setEnabled(false);
+            botaoGatilho.setText("Processando...");
+        }
 
-        String[] colunas = {
-                "Data / Hora",
-                "Módulo / Categoria",
-                "Descrição Detalhada"
+        SwingWorker<Void, Void> worker = new SwingWorker<>() {
+            private boolean sucesso = true;
+            private String erroMsg = "";
+
+            @Override
+            protected Void doInBackground() {
+                try {
+                    // Invoca o gerador customizado baseado na paleta visual corporativa
+                    GeradorPdfRelatorio.gerarRelatorioAtividades(listaAtividades);
+                } catch (Exception e) {
+                    sucesso = false;
+                    erroMsg = e.getMessage();
+                }
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                if (botaoGatilho != null) {
+                    botaoGatilho.setEnabled(true);
+                    botaoGatilho.setText("Visualizar relatório");
+                }
+
+                if (!sucesso) {
+                    JOptionPane.showMessageDialog(null,
+                            "Erro ao exportar histórico de atividades: " + erroMsg,
+                            "Erro de Exportação", JOptionPane.ERROR_MESSAGE);
+                }
+            }
         };
-
-        DefaultTableModel modeloTabela =
-                new DefaultTableModel(colunas, 0);
-
-        SimpleDateFormat formatoData =
-                new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
-
-        for (Atividade atividade : listaAtividades) {
-
-            modeloTabela.addRow(new Object[]{
-                    formatoData.format(atividade.getDataHora()),
-                    atividade.getCategoria(),
-                    atividade.getDescricao()
-            });
-        }
-
-        JTable tabela = new JTable(modeloTabela);
-
-        try {
-
-            MessageFormat cabecalho =
-                    new MessageFormat("Histórico de Atividades");
-
-            MessageFormat rodape =
-                    new MessageFormat("Página {0}");
-
-            tabela.print(
-                    JTable.PrintMode.FIT_WIDTH,
-                    cabecalho,
-                    rodape
-            );
-
-        } catch (Exception e) {
-
-            JOptionPane.showMessageDialog(
-                    null,
-                    "Erro ao imprimir: " + e.getMessage(),
-                    "Erro",
-                    JOptionPane.ERROR_MESSAGE
-            );
-        }
+        worker.execute();
     }
 }

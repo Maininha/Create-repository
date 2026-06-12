@@ -1,12 +1,15 @@
 package view;
 
 import controller.FinanceiroController;
+import model.Financeiro;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.AWTEventListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.text.SimpleDateFormat;
+import java.util.List;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.plaf.basic.BasicScrollBarUI;
 
@@ -19,6 +22,10 @@ public class PainelFinanceiro extends JPanel {
     private JTextField data2;
     private JComboBox<String> combo;
     private JTable tabela;
+    private SimpleDateFormat formatoData = new SimpleDateFormat("dd/MM/yyyy");
+
+    // Proteção para evitar múltiplas queries concorrentes na tabela
+    private SwingWorker<List<Financeiro>, Void> workerConsultaAtual = null;
 
     public PainelFinanceiro() {
 
@@ -68,7 +75,6 @@ public class PainelFinanceiro extends JPanel {
         data1.setBorder(BorderFactory.createLineBorder(new Color(220, 220, 220)));
         add(data1);
 
-        // CORREÇÃO: Caractere limpo, sem margens e ouvinte para fechar o calendário ao clicar fora
         JButton btnCal1 = new JButton("▼");
         btnCal1.setBounds(485, 120, 45, 40);
         btnCal1.setBackground(new Color(205, 145, 55));
@@ -82,8 +88,6 @@ public class PainelFinanceiro extends JPanel {
             JFrame topo = (JFrame) SwingUtilities.getWindowAncestor(this);
             String selecionada = new DatePickerNativo().exibirCalendario(topo, data1);
             if (!selecionada.equals("")) data1.setText(selecionada);
-
-            // Ativa o monitoramento de clique externo imediatamente após abrir o calendário
             vincularFechamentoAutomatico();
         });
         add(btnCal1);
@@ -102,7 +106,6 @@ public class PainelFinanceiro extends JPanel {
         data2.setBorder(BorderFactory.createLineBorder(new Color(220, 220, 220)));
         add(data2);
 
-        // CORREÇÃO: Caractere limpo, sem margens e ouvinte para fechar o calendário ao clicar fora
         JButton btnCal2 = new JButton("▼");
         btnCal2.setBounds(695, 120, 45, 40);
         btnCal2.setBackground(new Color(205, 145, 55));
@@ -116,8 +119,6 @@ public class PainelFinanceiro extends JPanel {
             JFrame topo = (JFrame) SwingUtilities.getWindowAncestor(this);
             String selecionada = new DatePickerNativo().exibirCalendario(topo, data2);
             if (!selecionada.equals("")) data2.setText(selecionada);
-
-            // Ativa o monitoramento de clique externo imediatamente após abrir o calendário
             vincularFechamentoAutomatico();
         });
         add(btnCal2);
@@ -128,12 +129,26 @@ public class PainelFinanceiro extends JPanel {
             public boolean isCellEditable(int row, int column) { return false; }
         };
 
+        // Otimização visual da tabela para coloração de créditos e débitos
         tabela = new JTable(modelo) {
             @Override
             public Component prepareRenderer(javax.swing.table.TableCellRenderer renderer, int row, int column) {
                 Component c = super.prepareRenderer(renderer, row, column);
                 if (!isRowSelected(row)) {
                     c.setBackground(row % 2 == 0 ? Color.WHITE : new Color(248, 245, 240));
+
+                    if (column == 5) {
+                        String fluxo = String.valueOf(tabela.getValueAt(row, 2));
+                        if (fluxo.equalsIgnoreCase("Entrada")) {
+                            c.setForeground(new Color(34, 139, 34));
+                            c.setFont(c.getFont().deriveFont(Font.BOLD));
+                        } else {
+                            c.setForeground(new Color(178, 34, 34));
+                            c.setFont(c.getFont().deriveFont(Font.BOLD));
+                        }
+                    } else {
+                        c.setForeground(Color.BLACK);
+                    }
                 }
                 return c;
             }
@@ -174,6 +189,7 @@ public class PainelFinanceiro extends JPanel {
         JSeparator divisor = new JSeparator();
         divisor.setForeground(new Color(240, 240, 240));
 
+        // 🛠️ BLOCO CORRIGIDO COM SANITIZAÇÃO DECIMAL PRECISA
         menuEditar.addActionListener(ev -> {
             int linha = tabela.getSelectedRow();
             if (linha != -1) {
@@ -183,16 +199,26 @@ public class PainelFinanceiro extends JPanel {
                     String tipoReg = tabela.getValueAt(linha, 2).toString();
                     String categoria = tabela.getValueAt(linha, 3).toString();
                     String descricao = tabela.getValueAt(linha, 4).toString();
-                    String valor = tabela.getValueAt(linha, 5).toString();
+                    String valorBruto = tabela.getValueAt(linha, 5).toString();
+
+                    // Remove "R$", espaços, sinais de + ou - externos
+                    String valorLimpo = valorBruto.replaceAll("[R$\\s\\+\\-]", "");
+
+                    // Garante a conversão da vírgula PT-BR para ponto decimal US sem perder casas centesimais
+                    if (valorLimpo.contains(",") && valorLimpo.contains(".")) {
+                        valorLimpo = valorLimpo.replace(".", "").replace(",", ".");
+                    } else if (valorLimpo.contains(",")) {
+                        valorLimpo = valorLimpo.replace(",", ".");
+                    }
 
                     TelaPrincipal tela = (TelaPrincipal) SwingUtilities.getWindowAncestor(this);
                     if (tela != null) {
-                        tela.getPainelNovaMovimentacao().preencherCamposParaEdicao(idMov, data, tipoReg, categoria, descricao, valor);
+                        tela.getPainelNovaMovimentacao().preencherCamposParaEdicao(idMov, data, tipoReg, categoria, descricao, valorLimpo);
                         tela.getCard().show(tela.getPainelConteudo(), "novaMovimentacao");
                         tela.selecionarBotao(tela.getBtFinanceiro());
                     }
                 } catch (Exception e) {
-                    JOptionPane.showMessageDialog(this, "Erro ao carregar dados: " + e.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(this, "Erro ao processar dados de edição: " + e.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
@@ -214,6 +240,7 @@ public class PainelFinanceiro extends JPanel {
                 if (confirmacao == JOptionPane.YES_OPTION) {
                     if (controller.excluirMovimentacao(idMov)) {
                         executarConsultaAtual();
+                        PainelResumoFinanceiro.dispararAtualizacaoAutomatica();
                     }
                 }
             }
@@ -254,7 +281,6 @@ public class PainelFinanceiro extends JPanel {
         tituloTabela.setBorder(BorderFactory.createEmptyBorder(0, 0, 15, 0));
 
         JScrollPane scroll = new JScrollPane(tabela);
-
         scroll.setBorder(BorderFactory.createEmptyBorder());
         scroll.setBackground(Color.WHITE);
         scroll.getViewport().setBackground(Color.WHITE);
@@ -311,29 +337,75 @@ public class PainelFinanceiro extends JPanel {
     }
 
     public void executarConsultaAtual() {
+        if (workerConsultaAtual != null && !workerConsultaAtual.isDone()) {
+            workerConsultaAtual.cancel(true);
+        }
+
         String tipoSelecionado = (String) combo.getSelectedItem();
-        controller.atualizarTabela(modelo, tipoSelecionado, data1.getText(), data2.getText());
+        String filtroDataInicio = data1.getText();
+        String filtroDataFim = data2.getText();
+
+        workerConsultaAtual = new SwingWorker<>() {
+            @Override
+            protected List<Financeiro> doInBackground() throws Exception {
+                return controller.buscarMovimentacoesFiltradas(tipoSelecionado, filtroDataInicio, filtroDataFim);
+            }
+
+            @Override
+            protected void done() {
+                if (isCancelled()) return;
+
+                try {
+                    List<Financeiro> movimentacoes = get();
+                    modelo.setRowCount(0);
+
+                    if (movimentacoes == null) return;
+
+                    if (movimentacoes.isEmpty()) {
+                        JOptionPane.showMessageDialog(PainelFinanceiro.this, "Não foram encontradas movimentações financeiras para o período ou tipo selecionado.", "Sem Resultados", JOptionPane.INFORMATION_MESSAGE);
+                        return;
+                    }
+
+                    for (Financeiro f : movimentacoes) {
+                        String dataStr = (f.getData() != null) ? formatoData.format(f.getData()) : "";
+
+                        double valorLimpo = Math.abs(f.getValor());
+                        String valorFormatado = String.format("R$ %.2f", valorLimpo);
+
+                        modelo.addRow(new Object[]{
+                                f.getIdMov(),
+                                dataStr,
+                                f.getTipo(),
+                                f.getCat(),
+                                f.getDesc(),
+                                valorFormatado
+                        });
+                    }
+
+                    tabela.revalidate();
+                    tabela.repaint();
+                } catch (Exception e) {
+                    System.err.println("Erro na atualização síncrona do modelo: " + e.getMessage());
+                }
+            }
+        };
+        workerConsultaAtual.execute();
     }
 
-    // 🔥 METODO AUXILIAR: Captura qualquer clique fora do calendário e força a perda do foco para fechá-lo
     private void vincularFechamentoAutomatico() {
-        Window janelaTopo = SwingUtilities.getWindowAncestor(this);
-        if (janelaTopo == null) return;
+        Window JANELAtopo = SwingUtilities.getWindowAncestor(this);
+        if (JANELAtopo == null) return;
 
-        // Procura todas as janelas ativas (como o popup do calendário aberto)
-        for (Window w : janelaTopo.getOwnedWindows()) {
+        for (Window w : JANELAtopo.getOwnedWindows()) {
             if (w.isVisible()) {
-                // Instancia um ouvinte que fecha ao clicar fora
                 AWTEventListener ouvinteCliqueExterno = new AWTEventListener() {
                     @Override
                     public void eventDispatched(AWTEvent event) {
                         if (event.getID() == MouseEvent.MOUSE_PRESSED) {
                             MouseEvent me = (MouseEvent) event;
-                            // Se o clique ocorreu fora dos limites físicos do calendário aberto
                             if (!w.getBounds().contains(me.getLocationOnScreen())) {
                                 w.setVisible(false);
                                 w.dispose();
-                                // Desvincula o ouvinte para economizar processamento
                                 Toolkit.getDefaultToolkit().removeAWTEventListener(this);
                             }
                         }
@@ -345,51 +417,29 @@ public class PainelFinanceiro extends JPanel {
     }
 
     private class ScrollBarProfissionalUI extends BasicScrollBarUI {
-
         @Override
         public void installUI(JComponent c) {
             super.installUI(c);
             c.setOpaque(false);
         }
-
         @Override
-        protected void paintTrack(Graphics g, JComponent c, Rectangle trackBounds) {
-        }
-
+        protected void paintTrack(Graphics g, JComponent c, Rectangle trackBounds) {}
         @Override
         protected void paintThumb(Graphics g, JComponent c, Rectangle thumbBounds) {
-            if (thumbBounds.isEmpty() || !c.isEnabled()) {
-                return;
-            }
-
+            if (thumbBounds.isEmpty() || !c.isEnabled()) return;
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-            if (isThumbRollover()) {
-                g2.setColor(new Color(165, 105, 20));
-            } else {
-                g2.setColor(new Color(205, 145, 55));
-            }
-
+            g2.setColor(isThumbRollover() ? new Color(165, 105, 20) : new Color(205, 145, 55));
             g2.fillRoundRect(thumbBounds.x, thumbBounds.y, thumbBounds.width, thumbBounds.height, 8, 8);
             g2.dispose();
         }
-
         @Override
-        protected JButton createDecreaseButton(int orientation) {
-            return criarBotaoInvisivel();
-        }
-
+        protected JButton createDecreaseButton(int orientation) { return criarBotaoInvisivel(); }
         @Override
-        protected JButton createIncreaseButton(int orientation) {
-            return criarBotaoInvisivel();
-        }
-
+        protected JButton createIncreaseButton(int orientation) { return criarBotaoInvisivel(); }
         private JButton criarBotaoInvisivel() {
             JButton btn = new JButton();
             btn.setPreferredSize(new Dimension(0, 0));
-            btn.setMinimumSize(new Dimension(0, 0));
-            btn.setMaximumSize(new Dimension(0, 0));
             return btn;
         }
     }

@@ -2,6 +2,10 @@ package view;
 
 import controller.FinanceiroController;
 import javax.swing.*;
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DocumentFilter;
 import java.awt.*;
 
 public class PainelNovaMovimentacao extends JPanel {
@@ -59,7 +63,7 @@ public class PainelNovaMovimentacao extends JPanel {
         comboClassificacao.setBorder(BorderFactory.createLineBorder(new Color(220, 220, 220)));
         add(comboClassificacao);
 
-        // Listener para alternar os itens da classificação dinamicamente (Uso Padrão do Usuário)
+        // Listener para alternar os itens da classificação dinamicamente
         combo.addActionListener(e -> {
             String selecionado = (String) combo.getSelectedItem();
             if (selecionado == null) return;
@@ -94,6 +98,8 @@ public class PainelNovaMovimentacao extends JPanel {
 
         area = new JTextArea();
         area.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        area.setLineWrap(true);
+        area.setWrapStyleWord(true);
         JScrollPane scroll = new JScrollPane(area);
         scroll.setBounds(40, 230, 640, 120);
         add(scroll);
@@ -107,6 +113,25 @@ public class PainelNovaMovimentacao extends JPanel {
         txtValor = new JTextField();
         txtValor.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         txtValor.setBounds(40, 410, 300, 40);
+
+        // Atendimento ao RNF06: Impede digitação de caracteres inválidos no campo monetário
+        ((AbstractDocument) txtValor.getDocument()).setDocumentFilter(new DocumentFilter() {
+            @Override
+            public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr) throws BadLocationException {
+                if (string == null) return;
+                if (string.matches("[0-9.,\\-]+")) {
+                    super.insertString(fb, offset, string, attr);
+                }
+            }
+
+            @Override
+            public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs) throws BadLocationException {
+                if (text == null) return;
+                if (text.matches("[0-9.,\\-]+")) {
+                    super.replace(fb, offset, length, text, attrs);
+                }
+            }
+        });
         add(txtValor);
 
         // BOTÃO SALVAR
@@ -135,18 +160,22 @@ public class PainelNovaMovimentacao extends JPanel {
         salvar.addActionListener(e -> {
             String tipoSelecionado = (String) combo.getSelectedItem();
             String categoriaSelecionada = (String) comboClassificacao.getSelectedItem();
-            String descTexto = area.getText();
-            String valorTexto = txtValor.getText();
+            String descTexto = area.getText().trim();
+            String valorTexto = txtValor.getText().trim();
+
+            // Atendimento ao RF05: Validação de consistência obrigatória
+            if (descTexto.isEmpty() || valorTexto.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Por favor, preencha a Descrição e o Valor antes de salvar.", "Campos Obrigatórios", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
 
             boolean sucesso;
 
             if (idMovEdicao == -1) {
-                // MODO: NOVO CADASTRO
                 sucesso = financeiroController.salvarMovimentacao(
                         tipoSelecionado, categoriaSelecionada, descTexto, valorTexto
                 );
             } else {
-                // MODO: EDIÇÃO DE REGISTRO EXISTENTE
                 sucesso = financeiroController.editarMovimentacao(
                         idMovEdicao, tipoSelecionado, categoriaSelecionada, descTexto, valorTexto, dataOriginalEdicao
                 );
@@ -163,7 +192,8 @@ public class PainelNovaMovimentacao extends JPanel {
                     this,
                     "Deseja cancelar a operação e retornar para a consulta?",
                     "Confirmar",
-                    JOptionPane.YES_NO_OPTION
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.QUESTION_MESSAGE
             );
 
             if (resposta == JOptionPane.YES_OPTION) {
@@ -172,19 +202,13 @@ public class PainelNovaMovimentacao extends JPanel {
         });
     }
 
-    // ========================================================================
-    // MÉTODO ESTRUTURAL: Recebe os dados carregados do clique da tabela
-    // ========================================================================
     public void preencherCamposParaEdicao(int idMov, String data, String tipo, String categoria, String descricao, String valor) {
         this.idMovEdicao = idMov;
-        this.dataOriginalEdicao = data; // Preserva a data original do registro
+        this.dataOriginalEdicao = data;
 
         this.titulo.setText("Editar Movimentação");
-
-        // 1. Define o Tipo de forma segura (Entrada ou Saída)
         this.combo.setSelectedItem(tipo);
 
-        // 2. Reconstrói o modelo de dados imediatamente para evitar falhas assíncronas do listener
         this.comboClassificacao.removeAllItems();
         if ("Entrada".equals(tipo)) {
             this.comboClassificacao.setModel(new DefaultComboBoxModel<>(new String[]{
@@ -197,18 +221,12 @@ public class PainelNovaMovimentacao extends JPanel {
             }));
         }
 
-        // 3. Define a categoria correta pós-sincronização
         this.comboClassificacao.setSelectedItem(categoria);
-
-        // 4. Popula as informações complementares
         this.area.setText(descricao);
-
-        // Remove símbolos de cifrão e pontos de milhar, padronizando o valor numérico puro
-        String valorLimpo = valor.replace("R$", "").replace(".", "").replace(",", ".").trim();
-        this.txtValor.setText(valorLimpo);
+        this.txtValor.setText(valor.trim());
     }
 
-    // Restaura a interface ao estado padrão de inserção e retorna à tela de listagem
+    // 🛠️ MÉTODO CORRIGIDO E ADAPTADO AO SCROLLPANE DA TELA PRINCIPAL
     private void limparCamposERetornar() {
         this.idMovEdicao = -1;
         this.dataOriginalEdicao = "";
@@ -217,18 +235,24 @@ public class PainelNovaMovimentacao extends JPanel {
         this.area.setText("");
         this.txtValor.setText("");
 
-        // Executa a transição de volta para o Painel de listagem no CardLayout
-        TelaPrincipal tela = (TelaPrincipal) SwingUtilities.getWindowAncestor(this);
-        if (tela != null) {
-            tela.getCard().show(tela.getPainelConteudo(), "financeiro");
+        SwingUtilities.invokeLater(() -> {
+            Container ancestral = this.getParent();
+            // Sobe com segurança contornando os JViewport e JScrollPane criados na TelaPrincipal
+            while (ancestral != null && !(ancestral instanceof TelaPrincipal)) {
+                ancestral = ancestral.getParent();
+            }
 
-            // CORREÇÃO: Método chamado com "x" (executarConsultaAtual) combinado com o PainelFinanceiro
-            for (Component comp : tela.getPainelConteudo().getComponents()) {
-                if (comp instanceof PainelFinanceiro) {
-                    ((PainelFinanceiro) comp).executarConsultaAtual();
-                    break;
+            if (ancestral != null) {
+                TelaPrincipal tela = (TelaPrincipal) ancestral;
+
+                // Força a mudança exata do cartão utilizando o CardLayout original da TelaPrincipal
+                tela.getCard().show(tela.getPainelConteudo(), "painelFinanceiro");
+
+                // Localiza o PainelFinanceiro e dispara a consulta de atualização na JTable
+                if (tela.getPainelFinanceiro() != null) {
+                    tela.getPainelFinanceiro().executarConsultaAtual();
                 }
             }
-        }
+        });
     }
 }

@@ -6,6 +6,8 @@ import javax.swing.border.LineBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.List;
 
 import controller.InicioController;
@@ -21,26 +23,18 @@ public class PainelInicio extends JPanel {
 
     private static PainelInicio instanciaAtiva;
 
-    // Componentes dinâmicos do banco
     private JLabel lblContadorAssociados;
     private JLabel lblContadorCadastros;
     private JLabel lblContadorRelatorios;
 
-    // Elementos gráficos para injeção assíncrona pura
     private JLabel fotoBanner;
     private JLabel lblIconeCard1;
     private JLabel lblIconeCard2;
     private JLabel lblIconeCard3;
-    private JLabel lblIconeRel1;
-    private JLabel lblIconeRel2;
-    private JLabel lblIconeRel3;
     private JPanel bannerContainer;
 
     private InicioController inicioController;
     private TelaPrincipal telaPrincipal;
-
-    // BORDA DE SUBSTITUIÇÃO: Uma linha clean que consome 0% de processamento gráfico
-    private final Border BORDA_CLEAN = BorderFactory.createLineBorder(new Color(230, 225, 218), 1, true);
 
     public PainelInicio(TelaPrincipal telaPrincipal) {
         instanciaAtiva = this;
@@ -48,17 +42,16 @@ public class PainelInicio extends JPanel {
         this.inicioController = new InicioController();
 
         setLayout(null);
+        // Fundo off-white padrão do protótipo
         setBackground(new Color(248, 245, 240));
 
-        int larguraDinamica = Toolkit.getDefaultToolkit().getScreenSize().width - 220;
-        setPreferredSize(new Dimension(larguraDinamica, 850));
+        // Define o tamanho real do conteúdo garantindo espaçamento inferior confortável de rolagem
+        setPreferredSize(new Dimension(1180, 850));
 
-        // 1. Montagem estrutural instantânea
         criarBanner();
         criarCards();
         criarRelatorios();
 
-        // 2. Dispara a carga pesada de dados e imagens em background isolado
         inicializarCargaParalelaCompleta();
     }
 
@@ -71,7 +64,6 @@ public class PainelInicio extends JPanel {
     private void inicializarCargaParalelaCompleta() {
         new Thread(() -> {
             try {
-                // Carregamento e redimensionamento do Banner em segundo plano
                 java.net.URL urlBanner = getClass().getResource("/imagens/banner.jpeg");
                 ImageIcon iconBannerFinal = null;
                 if (urlBanner != null) {
@@ -80,21 +72,15 @@ public class PainelInicio extends JPanel {
                     iconBannerFinal = new ImageIcon(img);
                 }
 
-                // Carregamento ultra rápido dos ícones em lote
+                // Cards de Cima: Mantêm as imagens com tratamento de nitidez SCALE_SMOOTH
                 ImageIcon ic1 = redimensionarIconeEficaz("/imagens/pessoas.png", 30, 30);
                 ImageIcon ic2 = redimensionarIconeEficaz("/imagens/adicionarPessoas.png", 30, 30);
                 ImageIcon ic3 = redimensionarIconeEficaz("/imagens/relatorioat.png", 30, 30);
 
-                ImageIcon ir1 = redimensionarIconeEficaz("/imagens/pessoas.png", 22, 22);
-                ImageIcon ir2 = redimensionarIconeEficaz("/imagens/cifrao.png", 22, 22);
-                ImageIcon ir3 = redimensionarIconeEficaz("/imagens/relatorio.jpg", 22, 22);
-
-                // 🔥 AJUSTADO AQUI: Chamadas sincronizadas com o InicioController padrão
                 int totalAssociados = inicioController.obterTotalAssociados();
                 int cadastrosMes = inicioController.obterCadastrosMes();
                 int relatoriosMes = inicioController.obterRelatoriosMes();
 
-                // Entrega dos dados montados de forma síncrona com a UI (sem causar gargalos)
                 final ImageIcon bannerFinal = iconBannerFinal;
                 SwingUtilities.invokeLater(() -> {
                     if (bannerFinal != null) {
@@ -105,10 +91,6 @@ public class PainelInicio extends JPanel {
                     if (ic1 != null) lblIconeCard1.setIcon(ic1);
                     if (ic2 != null) lblIconeCard2.setIcon(ic2);
                     if (ic3 != null) lblIconeCard3.setIcon(ic3);
-
-                    if (ir1 != null) lblIconeRel1.setIcon(ir1);
-                    if (ir2 != null) lblIconeRel2.setIcon(ir2);
-                    if (ir3 != null) lblIconeRel3.setIcon(ir3);
 
                     lblContadorAssociados.setText(String.valueOf(totalAssociados));
                     lblContadorCadastros.setText(String.valueOf(cadastrosMes));
@@ -126,7 +108,7 @@ public class PainelInicio extends JPanel {
             java.net.URL url = getClass().getResource(caminho);
             if (url != null) {
                 ImageIcon original = new ImageIcon(url);
-                return new ImageIcon(original.getImage().getScaledInstance(w, h, Image.SCALE_FAST));
+                return new ImageIcon(original.getImage().getScaledInstance(w, h, Image.SCALE_SMOOTH));
             }
         } catch (Exception e) {}
         return null;
@@ -135,7 +117,6 @@ public class PainelInicio extends JPanel {
     public void recarregarDadosBanco() {
         new Thread(() -> {
             try {
-                // 🔥 AJUSTADO AQUI TAMBÉM: Igualando as chamadas de método
                 int totalAssociados = inicioController.obterTotalAssociados();
                 int cadastrosMes = inicioController.obterCadastrosMes();
                 int relatoriosMes = inicioController.obterRelatoriosMes();
@@ -157,7 +138,7 @@ public class PainelInicio extends JPanel {
         bannerContainer.setBounds(40, 20, 1100, 250);
         bannerContainer.setOpaque(true);
         bannerContainer.setBackground(new Color(60, 40, 20));
-        bannerContainer.setBorder(BORDA_CLEAN);
+        bannerContainer.setBorder(new BordaSombra());
 
         fotoBanner = new JLabel();
         fotoBanner.setBounds(0, 0, 1100, 250);
@@ -177,18 +158,18 @@ public class PainelInicio extends JPanel {
         texto1.setFont(new Font("Segoe UI", Font.BOLD, 26));
         texto1.setBounds(40, 35, 600, 110);
 
-        JLabel texto2 = new JLabel("Gestão eficiente • Participação activa • Futuro melhor.");
+        JLabel texto2 = new JLabel("Gestão eficiente • Participação ativa • Futuro melhor.");
         texto2.setForeground(Color.WHITE);
         texto2.setFont(new Font("Segoe UI", Font.PLAIN, 17));
         texto2.setBounds(40, 155, 600, 30);
 
-        JPanel linha = new JPanel();
-        linha.setBackground(new Color(245, 166, 35));
-        linha.setBounds(40, 200, 280, 2);
+        JPanel line = new JPanel();
+        line.setBackground(new Color(245, 166, 35));
+        line.setBounds(40, 200, 280, 2);
 
         bannerContainer.add(texto1);
         bannerContainer.add(texto2);
-        bannerContainer.add(linha);
+        bannerContainer.add(line);
         bannerContainer.add(sombra);
         bannerContainer.add(fotoBanner);
 
@@ -204,9 +185,9 @@ public class PainelInicio extends JPanel {
         lblIconeCard2 = new JLabel("", SwingConstants.CENTER);
         lblIconeCard3 = new JLabel("", SwingConstants.CENTER);
 
-        JPanel c1 = criarCard("Quantidade de Associados", lblContadorAssociados, "Total de clientes cadastrados na comunidade.", new Color(245, 238, 218), lblIconeCard1);
-        JPanel c2 = criarCard("Cadastros", lblContadorCadastros, "Cadastros realizados este mês.", new Color(228, 243, 232), lblIconeCard2);
-        JPanel c3 = criarCard("Relatórios", lblContadorRelatorios, "Relatórios salvos no sistema.", new Color(228, 233, 247), lblIconeCard3);
+        JPanel c1 = criarCard("Quantidade de Clientes", lblContadorAssociados, "Total de clientes cadastrados na comunidade.", new Color(245, 238, 218), lblIconeCard1);
+        JPanel c2 = criarCard("Realizar Cadastros", lblContadorCadastros, "Cadastros realizados este mês.", new Color(228, 243, 232), lblIconeCard2);
+        JPanel c3 = criarCard("Relatórios", lblContadorRelatorios, "Relatórios gerados este mês.", new Color(228, 233, 247), lblIconeCard3);
 
         c1.setBounds(40, 290, 340, 200);
         c2.setBounds(420, 290, 340, 200);
@@ -221,8 +202,8 @@ public class PainelInicio extends JPanel {
         JPanel card = new JPanel();
         card.setLayout(null);
         card.setBackground(Color.WHITE);
-        card.setOpaque(true);
-        card.setBorder(BORDA_CLEAN);
+        card.setOpaque(false);
+        card.setBorder(new BordaSombra());
 
         JPanel painelIcone = new JPanel() {
             @Override
@@ -278,16 +259,13 @@ public class PainelInicio extends JPanel {
         painelPrincipal.setLayout(null);
         painelPrincipal.setBackground(Color.WHITE);
         painelPrincipal.setBounds(40, 550, 1100, 160);
-        painelPrincipal.setOpaque(true);
-        painelPrincipal.setBorder(BORDA_CLEAN);
+        painelPrincipal.setOpaque(false);
+        painelPrincipal.setBorder(new BordaSombra());
 
-        lblIconeRel1 = new JLabel("", SwingConstants.CENTER);
-        lblIconeRel2 = new JLabel("", SwingConstants.CENTER);
-        lblIconeRel3 = new JLabel("", SwingConstants.CENTER);
-
-        JPanel r1 = criarLinhaRelatorio("Relatório de Associados", "Visualize a lista completa de associados e suas informações.", lblIconeRel1);
-        JPanel r2 = criarLinhaRelatorio("Relatório Financeiro", "Acompanhe entradas, saídas e saldo financeiro.", lblIconeRel2);
-        JPanel r3 = criarLinhaRelatorio("Relatório de Atividades", "Consulte as atividades administrativas realizadas na comunidade.", lblIconeRel3);
+        // 🛠️ REMOÇÃO DE IMAGENS NOS CARDS DE BAIXO: Passando as cores correspondentes para criar marcadores profissionais
+        JPanel r1 = criarLinhaRelatorio("Relatório de Associados", "Visualize a lista completa de associados e suas informações.", new Color(185, 120, 30));
+        JPanel r2 = criarLinhaRelatorio("Relatório Financeiro", "Acompanhe entradas, saídas e saldo financeiro.", new Color(46, 125, 50));
+        JPanel r3 = criarLinhaRelatorio("Relatório de Atividades", "Consulte as atividades realizadas na comunidade.", new Color(21, 101, 192));
 
         r1.setBounds(15, 15, 345, 130);
         r2.setBounds(375, 15, 345, 130);
@@ -300,24 +278,27 @@ public class PainelInicio extends JPanel {
         add(painelPrincipal);
     }
 
-    private JPanel criarLinhaRelatorio(String titulo, String descricao, JLabel lblIcone) {
+    // Método adaptado para criar marcadores geométricos modernos em vez de carregar imagens
+    private JPanel criarLinhaRelatorio(String titulo, String descricao, Color corTemaIndicador) {
         JPanel subPainel = new JPanel();
         subPainel.setLayout(null);
         subPainel.setBackground(Color.WHITE);
 
+        // 🛠️ ELEMENTO VISUAL PROFISSIONAL: Marcador abstrato vetorial limpo (sem imagens distorcidas)
         JPanel circuloIcone = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(new Color(242, 242, 245));
+                g2.setColor(new Color(corTemaIndicador.getRed(), corTemaIndicador.getGreen(), corTemaIndicador.getBlue(), 30));
                 g2.fillOval(0, 0, getWidth(), getHeight());
+                g2.setColor(corTemaIndicador);
+                g2.fillOval(14, 14, 12, 12);
                 g2.dispose();
             }
         };
-        circuloIcone.setLayout(new BorderLayout());
-        circuloIcone.setBounds(10, 10, 45, 45);
-        circuloIcone.add(lblIcone);
+        circuloIcone.setBounds(15, 15, 40, 40);
+        circuloIcone.setOpaque(false);
 
         JLabel lblTitulo = new JLabel(titulo);
         lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 14));
@@ -339,27 +320,72 @@ public class PainelInicio extends JPanel {
         btnVisualizar.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnVisualizar.setBounds(65, 75, 140, 28);
 
+        // Feedback visual de Hover moderno nos botões de relatório
+        btnVisualizar.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                if (btnVisualizar.isEnabled()) {
+                    btnVisualizar.setBackground(new Color(235, 225, 212));
+                }
+            }
+            @Override
+            public void mouseExited(MouseEvent e) {
+                if (btnVisualizar.isEnabled()) {
+                    btnVisualizar.setBackground(new Color(245, 238, 228));
+                }
+            }
+        });
+
         btnVisualizar.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (telaPrincipal != null) {
+                    btnVisualizar.setEnabled(false);
+                    btnVisualizar.setText("Processando...");
+
                     new Thread(() -> {
-                        if (titulo.contains("Associados")) {
-                            AssociadoDAO associadoDAO = new AssociadoDAO();
-                            List<Associado> listaMembros = associadoDAO.listar();
-                            GeradorPdfRelatorio.gerarRelatorioAssociados(listaMembros);
+                        boolean sucesso = true;
+                        String msgErro = "";
 
-                        } else if (titulo.contains("Financeiro")) {
-                            FinanceiroDAO financeiroDAO = new FinanceiroDAO();
-                            List<Financeiro> listaFinancas = financeiroDAO.listar("Todos", null, null);
-                            GeradorPdfRelatorio.gerarRelatorioFinanceiro(listaFinancas);
+                        try {
+                            if (titulo.contains("Associados")) {
+                                AssociadoDAO associadoDAO = new AssociadoDAO();
+                                List<Associado> listaMembros = associadoDAO.listar();
+                                GeradorPdfRelatorio.gerarRelatorioAssociados(listaMembros);
 
-                        } else if (titulo.contains("Atividades")) {
-                            AtividadeController atividadeController = new AtividadeController();
-                            List<Atividade> listaCronograma = atividadeController.obterCronogramaAtividades();
-                            GeradorPdfRelatorio.gerarRelatorioAtividades(listaCronograma);
+                            } else if (titulo.contains("Financeiro")) {
+                                FinanceiroDAO financeiroDAO = new FinanceiroDAO();
+                                List<Financeiro> listaFinancas = financeiroDAO.listar("Todos", null, null);
+                                GeradorPdfRelatorio.gerarRelatorioFinanceiro(listaFinancas);
+
+                            } else if (titulo.contains("Atividades")) {
+                                AtividadeController atividadeController = new AtividadeController();
+                                List<Atividade> listaCronograma = atividadeController.obterCronogramaAtividades();
+                                GeradorPdfRelatorio.gerarRelatorioAtividades(listaCronograma);
+                            }
+                        } catch (Exception ex) {
+                            sucesso = false;
+                            msgErro = ex.getMessage();
                         }
-                        recarregarDadosBanco();
+
+                        final boolean resultadoFinal = sucesso;
+                        final String erroTexto = msgErro;
+
+                        SwingUtilities.invokeLater(() -> {
+                            btnVisualizar.setEnabled(true);
+                            btnVisualizar.setText("Visualizar relatório");
+
+                            if (resultadoFinal) {
+                                JOptionPane.showMessageDialog(PainelInicio.this,
+                                        "PDF gerado com sucesso!\nVerifique a sua pasta de Downloads.",
+                                        "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                            } else {
+                                JOptionPane.showMessageDialog(PainelInicio.this,
+                                        "Erro ao gerar o PDF: " + erroTexto,
+                                        "Falha na Exportação", JOptionPane.ERROR_MESSAGE);
+                            }
+                            recarregarDadosBanco();
+                        });
                     }).start();
                 }
             }

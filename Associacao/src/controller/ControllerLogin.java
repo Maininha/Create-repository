@@ -17,31 +17,32 @@ public class ControllerLogin {
     }
 
     private void eventos() {
-
         view.getBtEntrar().addActionListener(e -> autenticar());
         view.getBtLimpar().addActionListener(e -> view.limparCampos());
+
+        // Garante que se o usuário apertar "Enter" dentro do campo de senha, o login seja disparado
+        view.getTxSenha().addActionListener(e -> autenticar());
     }
 
     private void autenticar() {
-
-        // 🔥 remove pontos e traços do CPF
-        String cpf = view.getTxUsuario().getText().replaceAll("\\D", "");
-        String senha = new String(view.getTxSenha().getPassword());
+        // Remove quaisquer pontos, traços ou espaços em branco do campo de usuário
+        String cpf = view.getTxUsuario().getText().replaceAll("\\D", "").trim();
+        String senha = new String(view.getTxSenha().getPassword()).trim();
 
         if (cpf.isEmpty() || senha.isEmpty()) {
             view.exibirMensagem("Preencha todos os campos!");
             return;
         }
 
+        // Executa a nova autenticação com suporte a criptografia híbrida
         Usuario u = dao.autenticar(cpf, senha);
 
         if (u != null) {
             view.exibirMensagem("Login realizado com sucesso!");
+            view.dispose(); // Fecha a tela de login com segurança
 
-            view.dispose();
-
+            // Abre o painel/controller principal do sistema
             new ControllerPrincipal();
-
         } else {
             view.exibirMensagem("CPF ou senha inválidos!");
         }

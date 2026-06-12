@@ -18,7 +18,6 @@ public class TelaCadastroAssociado extends JFrame {
     private JPanel painelConteudo;
     private CardLayout card;
 
-    // Transformados em atributos para os 'getters' funcionarem
     private PainelCadastroAssociado cadastro;
     private PainelCriarUsuarioSenha senha;
 
@@ -97,27 +96,23 @@ public class TelaCadastroAssociado extends JFrame {
         add(menu, BorderLayout.WEST);
     }
 
-    /**
-     * CORREÇÃO CRÍTICA: Ajustado para passar parâmetros nulos (ou usar construtores alternativos)
-     * prevenindo o erro de "actual and formal argument lists differ in length".
-     */
     private void criarConteudo() {
         card = new CardLayout();
         painelConteudo = new JPanel(card);
         painelConteudo.setBackground(new Color(248, 245, 240));
 
-        // PainelInício corrigido passando null, isolando a dependência da TelaPrincipal
         PainelInicio inicio = new PainelInicio(null);
 
-        // CORREÇÃO: Enviando null para os construtores que exigem TelaPrincipal,
-        // permitindo que o código compile nesta tela secundária.
         cadastro = new PainelCadastroAssociado(null);
         senha = new PainelCriarUsuarioSenha(null);
         PainelResumoFinanceiro financeiro = new PainelResumoFinanceiro();
 
         painelConteudo.add(inicio, "inicio");
         painelConteudo.add(cadastro, "criarCadastro");
-        painelConteudo.add(senha, "criarSenha");
+
+        // 🛠️ FIX: Sincronizado a tag de texto com a chamada do Controller ("criarUsuarioSenha")
+        painelConteudo.add(senha, "criarUsuarioSenha");
+
         painelConteudo.add(financeiro, "financeiro");
 
         add(painelConteudo, BorderLayout.CENTER);

@@ -9,6 +9,7 @@ import view.TelaPrincipal;
 
 import javax.swing.*;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 
 public class ControllerListarAssociado {
 
@@ -36,7 +37,11 @@ public class ControllerListarAssociado {
         painel.limparTabela();
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
 
-        for (Associado a : dao.listar()) {
+        // Captura o ArrayList compatível retornado pelo DAO
+        ArrayList<Associado> listaAssociados = dao.listar();
+        if (listaAssociados == null) return;
+
+        for (Associado a : listaAssociados) {
 
             String data = (a.getDataCadastro() != null)
                     ? sdf.format(a.getDataCadastro())
@@ -57,7 +62,7 @@ public class ControllerListarAssociado {
 
     private void eventos() {
 
-        // limpa listeners antigos do editar
+        // Limpa listeners antigos do painel editar para evitar duplicações de ações na memória
         for (java.awt.event.ActionListener al : editar.getBtnSalvar().getActionListeners()) {
             editar.getBtnSalvar().removeActionListener(al);
         }
@@ -65,14 +70,13 @@ public class ControllerListarAssociado {
             editar.getBtnCancelar().removeActionListener(al);
         }
 
-        // =========================
-        // AÇÕES DA TABELA
-        // =========================
+        // ===================================
+        // AÇÕES DA TABELA DE VISUALIZAÇÃO
+        // ===================================
         painel.setAcoesListener(new PainelAssociados.AcoesListener() {
 
             @Override
             public void editar(int rowModel) {
-
                 if (rowModel < 0) return;
 
                 String cpf = painel.getTabela()
@@ -93,7 +97,6 @@ public class ControllerListarAssociado {
                     editar.getTxtReferencia().setText(a.getEndereco().getReferencia());
                 }
 
-                // 🔥 CORREÇÃO PRINCIPAL AQUI
                 frame.getCard().show(
                         frame.getPainelConteudo(),
                         "editarAssociado"
@@ -105,7 +108,6 @@ public class ControllerListarAssociado {
 
             @Override
             public void excluir(int rowModel) {
-
                 if (rowModel < 0) return;
 
                 String cpf = painel.getTabela()
@@ -122,7 +124,6 @@ public class ControllerListarAssociado {
                 );
 
                 if (resp == JOptionPane.YES_OPTION) {
-
                     if (dao.excluir(cpf)) {
                         JOptionPane.showMessageDialog(
                                 frame,
@@ -142,10 +143,9 @@ public class ControllerListarAssociado {
         });
 
         // =========================
-        // BOTÃO SALVAR
+        // BOTÃO SALVAR (EDIÇÃO)
         // =========================
         editar.getBtnSalvar().addActionListener(e -> {
-
             String cpf = editar.getTxtCpf().getText();
             String nome = editar.getTxtNome().getText();
 
@@ -176,7 +176,6 @@ public class ControllerListarAssociado {
 
             if (ok) {
                 JOptionPane.showMessageDialog(frame, "Atualizado com sucesso!");
-
                 carregarAssociados();
 
                 frame.getCard().show(
@@ -194,7 +193,7 @@ public class ControllerListarAssociado {
         });
 
         // =========================
-        // CANCELAR
+        // CANCELAR EDIÇÃO
         // =========================
         editar.getBtnCancelar().addActionListener(e -> {
             frame.getCard().show(

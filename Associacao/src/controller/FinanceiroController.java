@@ -3,7 +3,7 @@ package controller;
 import model.FinanceiroDAO;
 import model.Financeiro;
 import javax.swing.JOptionPane;
-import javax.swing.table.DefaultTableModel;
+import java.math.BigDecimal;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -25,12 +25,12 @@ public class FinanceiroController {
             return false;
         }
 
-        double valor;
+        BigDecimal valor;
         try {
-            valorStr = valorStr.replace(",", ".");
-            valor = Double.parseDouble(valorStr);
+            valorStr = valorStr.replace(",", ".").trim();
+            valor = new BigDecimal(valorStr);
 
-            if (valor <= 0) {
+            if (valor.compareTo(BigDecimal.ZERO) <= 0) {
                 JOptionPane.showMessageDialog(null, "O valor deve ser maior que zero.", "Aviso", JOptionPane.WARNING_MESSAGE);
                 return false;
             }
@@ -43,7 +43,7 @@ public class FinanceiroController {
         financeiro.setTipo(tipo);
         financeiro.setCat(categoria);
         financeiro.setDesc(descricao);
-        financeiro.setValor(valor);
+        financeiro.setValor(valor.doubleValue());
         financeiro.setData(new Date());
 
         boolean sucesso = financeiroDAO.salvar(financeiro);
@@ -57,21 +57,31 @@ public class FinanceiroController {
         return sucesso;
     }
 
-    // ========================================================================
-    // REGRA DE NEGÓCIO: Executa as validações para a Alteração/Edição
-    // ========================================================================
     public boolean editarMovimentacao(int idMov, String tipo, String categoria, String descricao, String valorStr, String dataStr) {
         if (valorStr == null || valorStr.trim().isEmpty()) {
             JOptionPane.showMessageDialog(null, "O campo 'Valor' é obrigatório para edição.", "Aviso", JOptionPane.WARNING_MESSAGE);
             return false;
         }
 
-        double valor;
+        BigDecimal valor;
         Date dataMov;
         try {
-            valorStr = valorStr.replace("R$", "").replace(".", "").replace(",", ".").trim();
-            valor = Double.parseDouble(valorStr);
-            if (valor <= 0) {
+            // 🛠️ BLINDAGEM CONTRA MULTIPLICAÇÃO:
+            // Remove símbolos e espaços
+            String valorLimpo = valorStr.replace("R$", "").trim();
+
+            // Caso contenha os dois separadores (ex: 1.000,00)
+            if (valorLimpo.contains(",") && valorLimpo.contains(".")) {
+                valorLimpo = valorLimpo.replace(".", "").replace(",", ".");
+            }
+            // Caso contenha apenas a vírgula brasileira (ex: 1000,00)
+            else if (valorLimpo.contains(",")) {
+                valorLimpo = valorLimpo.replace(",", ".");
+            }
+            // Se continha apenas o ponto (ex: 1000.00), mantemos intacto para não remover a casa decimal!
+
+            valor = new BigDecimal(valorLimpo);
+            if (valor.compareTo(BigDecimal.ZERO) <= 0) {
                 JOptionPane.showMessageDialog(null, "O valor deve ser maior que zero.", "Aviso", JOptionPane.WARNING_MESSAGE);
                 return false;
             }
@@ -87,7 +97,7 @@ public class FinanceiroController {
         f.setTipo(tipo);
         f.setCat(categoria);
         f.setDesc(descricao);
-        f.setValor(valor);
+        f.setValor(valor.doubleValue());
         f.setData(dataMov);
 
         boolean sucesso = financeiroDAO.atualizar(f);
@@ -109,9 +119,7 @@ public class FinanceiroController {
         return sucesso;
     }
 
-    public void atualizarTabela(DefaultTableModel modelo, String tipoFiltro, String dataInicioStr, String dataFimStr) {
-        modelo.setRowCount(0);
-
+    public List<Financeiro> buscarMovimentacoesFiltradas(String tipoFiltro, String dataInicioStr, String dataFimStr) {
         Date dataInicio = null;
         Date dataFim = null;
 
@@ -124,33 +132,14 @@ public class FinanceiroController {
             }
         } catch (ParseException e) {
             JOptionPane.showMessageDialog(null, "As datas devem estar no formato correto: dd/MM/yyyy", "Formato Inválido", JOptionPane.WARNING_MESSAGE);
-            return;
+            return null;
         }
 
         if (dataInicio != null && dataFim != null && dataInicio.after(dataFim)) {
             JOptionPane.showMessageDialog(null, "A data de início não pode ser posterior à data final.", "Período Incorreto", JOptionPane.WARNING_MESSAGE);
-            return;
+            return null;
         }
 
-        List<Financeiro> movimentacoes = financeiroDAO.listar(tipoFiltro, dataInicio, dataFim);
-
-        if (movimentacoes.isEmpty()) {
-            JOptionPane.showMessageDialog(null, "Não foram encontradas movimentações financeiras para o período ou tipo selecionado.", "Sem Resultados", JOptionPane.INFORMATION_MESSAGE);
-            return;
-        }
-
-        for (Financeiro f : movimentacoes) {
-            String dataStr = (f.getData() != null) ? formatoData.format(f.getData()) : "";
-            String valorFormatado = String.format("R$ %.2f", f.getValor());
-
-            modelo.addRow(new Object[]{
-                    f.getIdMov(),
-                    dataStr,
-                    f.getTipo(),
-                    f.getCat(),
-                    f.getDesc(),
-                    valorFormatado
-            });
-        }
+        return financeiroDAO.listar(tipoFiltro, dataInicio, dataFim);
     }
 }

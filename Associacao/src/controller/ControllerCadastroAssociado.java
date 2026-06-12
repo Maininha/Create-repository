@@ -78,10 +78,21 @@ public class ControllerCadastroAssociado {
             return;
         }
 
-        // Padroniza removendo pontos e traços para caber nos limites do banco de dados
+        // Padroniza removendo pontos e traços
         String cpf = cpfRaw.replaceAll("[^0-9]", "");
         if (cpf.length() > 11) {
             cpf = cpf.substring(0, 11);
+        }
+
+        // CORREÇÃO CRÍTICA [RF003]: Validação do formato e estrutura matemática do CPF
+        if (cpf.length() != 11 || cpf.matches("(\\d)\\1{10}")) {
+            JOptionPane.showMessageDialog(
+                    telaCadastro,
+                    "O CPF informado é inválido! Digite um CPF com 11 dígitos válidos.",
+                    "Formato de CPF Inválido",
+                    JOptionPane.ERROR_MESSAGE
+            );
+            return;
         }
 
         if (dao.existeCpf(cpf)) {
@@ -164,7 +175,6 @@ public class ControllerCadastroAssociado {
     }
 
     private void atualizarListagemTelas() {
-        // 🔥 CORRIGIDO: Chama diretamente o método real existente no seu ControllerListarAssociado
         if (telaCadastro != null && telaCadastro.getControllerListar() != null) {
             telaCadastro.getControllerListar().carregarAssociados();
         }

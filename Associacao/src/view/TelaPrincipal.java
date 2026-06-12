@@ -2,7 +2,9 @@ package view;
 
 import controller.ControllerListarAssociado;
 import controller.ControllerCadastroAssociado;
+import controller.ControllerLogin; // Import adicionado para o Logout reconstruir o fluxo
 import model.AssociadoDAO;
+import model.UsuarioDAO; // Import adicionado para fornecer o banco de dados à tela de login
 
 import javax.swing.*;
 import java.awt.*;
@@ -10,7 +12,6 @@ import java.net.URL;
 
 public class TelaPrincipal extends JFrame {
 
-    // Botões do Menu Lateral
     private JButton btInicio;
     private JButton btAssociados;
     private JButton btFinanceiro;
@@ -18,11 +19,9 @@ public class TelaPrincipal extends JFrame {
     private JButton btSair;
     private JButton[] todosBotoes;
 
-    // Gerenciamento de Layout
     private JPanel painelConteudo;
     private CardLayout card;
 
-    // Sub-painéis (Ligados com o Banco de Dados e Controllers)
     private PainelCadastroAssociado painelCadastro;
     private PainelCriarUsuarioSenha painelSenha;
     private PainelAssociados painelAssociados;
@@ -31,13 +30,11 @@ public class TelaPrincipal extends JFrame {
     private PainelNovaMovimentacao painelNovaMovimentacao;
     private PainelResumoFinanceiro painelResumoFinanceiro;
 
-    // Controllers
     private ControllerListarAssociado controllerListar;
     private ControllerCadastroAssociado controllerCadastro;
 
-    // Cores Customizadas da Identidade Visual Premium Aplicadas
     private final Color COR_MENU = new Color(43, 22, 7);
-    private final Color COR_ATIVO = new Color(185, 120, 30); // Dourado Premium Restaurado
+    private final Color COR_ATIVO = new Color(185, 120, 30);
 
     public TelaPrincipal() {
         setTitle("Sistema de Gestão Quilombola");
@@ -48,37 +45,23 @@ public class TelaPrincipal extends JFrame {
 
         setLayout(new BorderLayout());
 
-        // 1. Inicializa e monta a interface gráfica com as estilizações avançadas
         configurarMenuLateral();
         configurarTopo();
         criarConteudo();
 
-        // 2. Exibe a tela imediatamente
         setVisible(true);
 
-        // 3. Processamento pesado de Banco de Dados executado em Background Thread
         new Thread(() -> {
             try {
                 ConfigurarAcoesMenu();
 
-                // Inicialização do DAO de Associados
                 AssociadoDAO dao = new AssociadoDAO();
-
-                // Inicializa o controlador de listagem
                 controllerListar = new ControllerListarAssociado(painelAssociados, painelEditar, this, dao);
 
-                // Atualiza de forma assíncrona os contadores do painel inicial
-                if (painelConteudo != null) {
-                    Component[] componentes = painelConteudo.getComponents();
-                    for (Component comp : componentes) {
-                        if (comp instanceof JScrollPane) {
-                            Component view = ((JScrollPane) comp).getViewport().getView();
-                            if (view instanceof PainelInicio) {
-                                ((PainelInicio) view).recarregarDadosBanco();
-                            }
-                        }
-                    }
-                }
+                // Força atualização inicial de dados do banco
+                PainelInicio.dispararAtualizacaoAutomatica();
+                PainelResumoFinanceiro.dispararAtualizacaoAutomatica();
+
             } catch (Exception e) {
                 System.err.println("Erro no carregamento assíncrono de dados: " + e.getMessage());
                 e.printStackTrace();
@@ -88,18 +71,16 @@ public class TelaPrincipal extends JFrame {
 
     private void configurarMenuLateral() {
         JPanel menuLateral = new JPanel();
-        menuLateral.setLayout(null); // Layout absoluto para bater com as coordenadas da estilização
+        menuLateral.setLayout(null);
         menuLateral.setPreferredSize(new Dimension(220, 0));
         menuLateral.setBackground(COR_MENU);
         menuLateral.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(70, 40, 15)));
 
-        // Faixa dourada decorativa no topo do menu
         JPanel faixa = new JPanel();
         faixa.setBackground(new Color(205, 145, 55));
         faixa.setBounds(0, 0, 220, 5);
         menuLateral.add(faixa);
 
-        // JLabel dinâmico para receber a imagem completa da logo ou texto fallback
         JLabel logo = new JLabel();
         logo.setBounds(20, 20, 180, 100);
         logo.setHorizontalAlignment(SwingConstants.CENTER);
@@ -120,21 +101,18 @@ public class TelaPrincipal extends JFrame {
         }
         menuLateral.add(logo);
 
-        // Separador estético abaixo da logo
         JSeparator separador = new JSeparator();
         separador.setBounds(20, 125, 180, 1);
         separador.setForeground(new Color(205, 145, 55));
         menuLateral.add(separador);
 
-        // Inicialização dos botões posicionados por coordenadas absolutas estáveis
         btInicio = criarBotaoMenu("Início", 140, true);
         btAssociados = criarBotaoMenu("Associados", 200, false);
         btFinanceiro = criarBotaoMenu("Financeiro", 260, false);
         btRelatorios = criarBotaoMenu("Relatórios", 320, false);
 
-        // Botão de deslogar posicionado na parte inferior ou na sequência do menu absoluto
         btSair = criarBotaoMenu("Sair", 380, false);
-        btSair.setForeground(new Color(240, 150, 150));
+        btSair.setForeground(new Color(220, 210, 200));
 
         todosBotoes = new JButton[]{btInicio, btAssociados, btFinanceiro, btRelatorios, btSair};
 
@@ -212,18 +190,14 @@ public class TelaPrincipal extends JFrame {
         painelConteudo = new JPanel(card);
         painelConteudo.setBackground(Color.WHITE);
 
-        // Painéis com referências cruzadas
         painelCadastro = new PainelCadastroAssociado(this);
         painelSenha = new PainelCriarUsuarioSenha(this);
-
-        // Instanciação dos sub-painéis internos
         painelAssociados = new PainelAssociados();
         painelEditar = new PainelEditarAssociado();
         painelFinanceiro = new PainelFinanceiro();
         painelNovaMovimentacao = new PainelNovaMovimentacao();
         painelResumoFinanceiro = new PainelResumoFinanceiro();
 
-        // Envelopamento em JScrollPanes customizados e limpos (Borda null, ScrollBarCustomUI)
         JScrollPane scrollInicio = customizarScrollPane(new PainelInicio(this));
         JScrollPane scrollAssociados = customizarScrollPane(painelAssociados);
         JScrollPane scrollCadastro = customizarScrollPane(painelCadastro);
@@ -233,7 +207,6 @@ public class TelaPrincipal extends JFrame {
         JScrollPane scrollNovaMov = customizarScrollPane(painelNovaMovimentacao);
         JScrollPane scrollResumo = customizarScrollPane(painelResumoFinanceiro);
 
-        // Vinculação das chaves textuais do CardLayout
         painelConteudo.add(scrollInicio, "inicio");
         painelConteudo.add(scrollCadastro, "cadastroAssociado");
         painelConteudo.add(scrollSenha, "criarUsuarioSenha");
@@ -246,7 +219,6 @@ public class TelaPrincipal extends JFrame {
         add(painelConteudo, BorderLayout.CENTER);
     }
 
-    // Auxiliar para centralizar a aplicação repetitiva da UI customizada nas barras de rolagem
     private JScrollPane customizarScrollPane(JPanel painel) {
         JScrollPane scroll = new JScrollPane(painel);
         scroll.setBorder(null);
@@ -265,16 +237,7 @@ public class TelaPrincipal extends JFrame {
         btInicio.addActionListener(e -> {
             alternarCorBotao(btInicio);
             card.show(painelConteudo, "inicio");
-
-            Component[] componentes = painelConteudo.getComponents();
-            for (Component comp : componentes) {
-                if (comp instanceof JScrollPane) {
-                    Component view = ((JScrollPane) comp).getViewport().getView();
-                    if (view instanceof PainelInicio) {
-                        ((PainelInicio) view).recarregarDadosBanco();
-                    }
-                }
-            }
+            PainelInicio.dispararAtualizacaoAutomatica();
         });
 
         btAssociados.addActionListener(e -> {
@@ -290,6 +253,24 @@ public class TelaPrincipal extends JFrame {
         btRelatorios.addActionListener(e -> {
             alternarCorBotao(btRelatorios);
             card.show(painelConteudo, "resumoFinanceiro");
+            PainelResumoFinanceiro.dispararAtualizacaoAutomatica();
+        });
+
+        // 🛠️ FIX DEFINITIVO DE LOGOUT: Destrói a sessão e reconstrói o Controller da nova TelaLogin
+        btSair.addActionListener(e -> {
+            // Fecha/Destrói a janela atual do painel principal liberando recursos
+            this.dispose();
+
+            // Abre a tela de login vinculando seu respectivo controller na Thread de interface
+            SwingUtilities.invokeLater(() -> {
+                TelaLogin login = new TelaLogin();
+                UsuarioDAO usuarioDao = new UsuarioDAO();
+
+                // Reconstrói a escuta dos botões (como o botão Entrar) para a nova janela criada
+                new ControllerLogin(login, usuarioDao);
+
+                login.setVisible(true);
+            });
         });
     }
 
@@ -311,14 +292,12 @@ public class TelaPrincipal extends JFrame {
         alternarCorBotao(botaoSelecionado);
     }
 
-    // ================= GETTERS DOS BOTÕES =================
     public JButton getBtInicio() { return btInicio; }
     public JButton getBtAssociados() { return btAssociados; }
     public JButton getBtFinanceiro() { return btFinanceiro; }
     public JButton getBtRelatorios() { return btRelatorios; }
     public JButton getBtSair() { return btSair; }
 
-    // ================= GETTERS DOS PAINÉIS =================
     public CardLayout getCard() { return card; }
     public JPanel getPainelConteudo() { return painelConteudo; }
     public PainelCadastroAssociado getPainelCadastro() { return painelCadastro; }

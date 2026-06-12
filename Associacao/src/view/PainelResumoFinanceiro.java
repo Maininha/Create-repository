@@ -21,7 +21,6 @@ public class PainelResumoFinanceiro extends JPanel {
 
     private static PainelResumoFinanceiro instanciaAtiva;
 
-    // Componentes: Interface Financeira
     private JLabel lblValorEntrada;
     private JLabel lblValorSaida;
     private JLabel lblValorSaldo;
@@ -30,37 +29,25 @@ public class PainelResumoFinanceiro extends JPanel {
     private JComboBox<String> cbPeriodo;
     private JButton btnGerarRelatorio;
 
-    // Dependências de controle e acesso a dados
     private RelatorioController relatorioController;
-    private FinanceiroDAO financeiroDAO;
 
     public PainelResumoFinanceiro() {
         instanciaAtiva = this;
-
-        // Inicializa controladores
         this.relatorioController = new RelatorioController();
-        this.financeiroDAO = new FinanceiroDAO();
 
         setLayout(new BorderLayout());
         setBackground(new Color(248, 245, 240));
 
-        // Renderiza a interface diretamente no painel principal
         JPanel painelFinanceiroUnico = inicializarInterfaceFinanceira();
         add(painelFinanceiroUnico, BorderLayout.CENTER);
 
         recarregarDadosBanco();
     }
 
-    // 🔥 Gatilho global acionado por outros controllers ao salvar novos dados
     public static void dispararAtualizacaoAutomatica() {
         if (instanciaAtiva != null) {
-            // Garante que a interface redesenhe de forma segura na Thread correta
             SwingUtilities.invokeLater(() -> instanciaAtiva.recarregarDadosBanco());
         }
-    }
-
-    public void focarAba(int index) {
-        // Método vazio mantido para compatibilidade
     }
 
     private JPanel inicializarInterfaceFinanceira() {
@@ -138,12 +125,10 @@ public class PainelResumoFinanceiro extends JPanel {
         scrollResumo.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scrollResumo.setBorder(null);
         scrollResumo.setBounds(10, 10, 495, 230);
-
         scrollResumo.setBackground(Color.WHITE);
         scrollResumo.getViewport().setBackground(Color.WHITE);
         scrollResumo.getVerticalScrollBar().setUI(new ScrollBarProfissionalUI());
         scrollResumo.getVerticalScrollBar().setPreferredSize(new Dimension(8, 0));
-        scrollResumo.getVerticalScrollBar().setBackground(Color.WHITE);
 
         containerResumo.add(scrollResumo);
         abaFin.add(containerResumo);
@@ -169,17 +154,14 @@ public class PainelResumoFinanceiro extends JPanel {
         scrollMov.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scrollMov.setBorder(null);
         scrollMov.setBounds(10, 10, 495, 230);
-
         scrollMov.setBackground(Color.WHITE);
         scrollMov.getViewport().setBackground(Color.WHITE);
         scrollMov.getVerticalScrollBar().setUI(new ScrollBarProfissionalUI());
         scrollMov.getVerticalScrollBar().setPreferredSize(new Dimension(8, 0));
-        scrollMov.getVerticalScrollBar().setBackground(Color.WHITE);
 
         containerMovimentacoes.add(scrollMov);
         abaFin.add(containerMovimentacoes);
 
-        // Configuração dos Eventos
         cbPeriodo.addActionListener(e -> recarregarDadosBanco());
         btnGerarRelatorio.addActionListener(e -> acionarGeracaoPDF());
 
@@ -187,116 +169,129 @@ public class PainelResumoFinanceiro extends JPanel {
     }
 
     private void acionarGeracaoPDF() {
+        btnGerarRelatorio.setEnabled(false);
+        btnGerarRelatorio.setText("Processando...");
+
         String itemSelecionado = (String) cbPeriodo.getSelectedItem();
         Calendar calendar = Calendar.getInstance();
         Date dataFim = calendar.getTime();
-        Date dataInicio;
 
         if ("Últimos 30 dias".equals(itemSelecionado)) {
             calendar.add(Calendar.DAY_OF_YEAR, -30);
-            dataInicio = calendar.getTime();
         } else if ("Este ano".equals(itemSelecionado)) {
             calendar.set(Calendar.DAY_OF_YEAR, 1);
-            dataInicio = calendar.getTime();
         } else {
             calendar.set(Calendar.DAY_OF_MONTH, 1);
-            dataInicio = calendar.getTime();
         }
+        Date dataInicio = calendar.getTime();
 
-        Relatorio relatorioAtual = relatorioController.generateRelatorioPorPeriodo(dataInicio, dataFim, "Mensal");
-        if (relatorioAtual == null) {
-            relatorioAtual = relatorioController.gerarRelatorioPorPeriodo(dataInicio, dataFim, "Mensal");
-        }
+        SwingWorker<Void, Void> worker = new SwingWorker<>() {
+            private boolean sucesso = true;
+            private String mensagemErro = "";
 
-        if (relatorioAtual != null) {
-            boolean salvoComSucesso = financeiroDAO.salvarRelatorioNoBanco(
-                    dataInicio,
-                    dataFim,
-                    relatorioAtual.getTotalEntradas(),
-                    relatorioAtual.getTotalSaidas(),
-                    relatorioAtual.getSaldoFinal()
-            );
+            @Override
+            protected Void doInBackground() {
+                try {
+                    relatorioController.gerarRelatorioPorPeriodo(dataInicio, dataFim, "Mensal");
 
-            if (salvoComSucesso) {
-                System.out.println("Sucesso: Relatório financeiro persistido no banco de dados.");
-            } else {
-                System.err.println("Erro: Falha ao tentar registrar o histórico do relatório no banco.");
+                    FinanceiroDAO financeiroDAO = new FinanceiroDAO();
+                    List<Financeiro> movimentacoesPeriodo = financeiroDAO.listar("Todos", dataInicio, dataFim);
+
+                    if (movimentacoesPeriodo != null) {
+                        GeradorPdfRelatorio.gerarRelatorioFinanceiro(movimentacoesPeriodo);
+                    }
+                } catch (Exception e) {
+                    sucesso = false;
+                    mensagemErro = e.getMessage();
+                }
+                return null;
             }
-        }
 
-        List<Financeiro> movimentacoesPeriodo = financeiroDAO.listar("Todos", dataInicio, dataFim);
-        if (movimentacoesPeriodo != null) {
-            GeradorPdfRelatorio.gerarRelatorioFinanceiro(movimentacoesPeriodo);
-        }
+            @Override
+            protected void done() {
+                btnGerarRelatorio.setEnabled(true);
+                btnGerarRelatorio.setText("Gerar Relatório");
+
+                if (sucesso) {
+                    JOptionPane.showMessageDialog(PainelResumoFinanceiro.this,
+                            "PDF exportado com sucesso!\nVerifique a sua pasta de Downloads.",
+                            "Exportação Realizada", JOptionPane.INFORMATION_MESSAGE);
+                } else {
+                    JOptionPane.showMessageDialog(PainelResumoFinanceiro.this,
+                            "Erro ao exportar o documento: " + mensagemErro,
+                            "Erro de Exportação", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        };
+        worker.execute();
     }
 
-    // ================= MÉTODO REPARADO E ATUALIZADO =================
     public void recarregarDadosBanco() {
         String itemSelecionado = (String) cbPeriodo.getSelectedItem();
         Calendar calendar = Calendar.getInstance();
         Date dataFim = calendar.getTime();
-        Date dataInicio;
 
         if ("Últimos 30 dias".equals(itemSelecionado)) {
             calendar.add(Calendar.DAY_OF_YEAR, -30);
-            dataInicio = calendar.getTime();
         } else if ("Este ano".equals(itemSelecionado)) {
             calendar.set(Calendar.DAY_OF_YEAR, 1);
-            dataInicio = calendar.getTime();
         } else {
             calendar.set(Calendar.DAY_OF_MONTH, 1);
-            dataInicio = calendar.getTime();
         }
+        Date dataInicio = calendar.getTime();
 
-        Relatorio relatorio = relatorioController.generateRelatorioPorPeriodo(dataInicio, dataFim, "Mensal");
-        if (relatorio == null) {
-            relatorio = relatorioController.gerarRelatorioPorPeriodo(dataInicio, dataFim, "Mensal");
-        }
+        SwingWorker<Relatorio, Void> worker = new SwingWorker<>() {
+            private List<Financeiro> listaMovimentos;
 
-        lblValorEntrada.setText(String.format("R$ %.2f", relatorio.getTotalEntradas()));
-        lblValorSaida.setText(String.format("R$ %.2f", relatorio.getTotalSaidas()));
-        lblValorSaldo.setText(String.format("R$ %.2f", relatorio.getSaldoFinal()));
-
-        DefaultTableModel modelResumo = (DefaultTableModel) tableResumo.getModel();
-        modelResumo.setRowCount(0);
-        modelResumo.addRow(new Object[]{" Total de entradas", String.format("R$ %.2f ", relatorio.getTotalEntradas())});
-        modelResumo.addRow(new Object[]{" Total de saídas", String.format("R$ %.2f ", relatorio.getTotalSaidas())});
-        modelResumo.addRow(new Object[]{" Saldo do período", String.format("R$ %.2f ", relatorio.getSaldoFinal())});
-
-        DefaultTableModel modelMov = (DefaultTableModel) tableMov.getModel();
-        modelMov.setRowCount(0);
-
-        List<Financeiro> listaMovimentos = financeiroDAO.listar("Todos", dataInicio, dataFim);
-        SimpleDateFormat formatoData = new SimpleDateFormat("dd/MM/yyyy");
-
-        if (listaMovimentos != null) {
-            for (Financeiro f : listaMovimentos) {
-                modelMov.addRow(new Object[]{
-                        " " + formatoData.format(f.getData()),
-                        " " + f.getTipo(),
-                        String.format("R$ %.2f ", f.getValor())
-                });
+            @Override
+            protected Relatorio doInBackground() throws Exception {
+                FinanceiroDAO financeiroDAO = new FinanceiroDAO();
+                listaMovimentos = financeiroDAO.listar("Todos", dataInicio, dataFim);
+                return relatorioController.gerarRelatorioPorPeriodo(dataInicio, dataFim, "Mensal");
             }
-        }
 
-        // 🔥 CORREÇÃO: Força o Swing a redesenhar as tabelas e os viewports dos JScrollPanes
-        tableResumo.revalidate();
-        tableResumo.repaint();
-        tableMov.revalidate();
-        tableMov.repaint();
+            @Override
+            protected void done() {
+                try {
+                    Relatorio relatorio = get();
 
-        if (tableResumo.getParent() != null) {
-            tableResumo.getParent().revalidate();
-            tableResumo.getParent().repaint();
-        }
-        if (tableMov.getParent() != null) {
-            tableMov.getParent().revalidate();
-            tableMov.getParent().repaint();
-        }
+                    lblValorEntrada.setText(String.format("R$ %.2f", relatorio.getTotalEntradas()));
+                    lblValorSaida.setText(String.format("R$ %.2f", relatorio.getTotalSaidas()));
+                    lblValorSaldo.setText(String.format("R$ %.2f", relatorio.getSaldoFinal()));
 
-        // Força a interface de usuário geral a se reajustar na tela
-        revalidate();
-        repaint();
+                    DefaultTableModel modelResumo = (DefaultTableModel) tableResumo.getModel();
+                    modelResumo.setRowCount(0);
+                    modelResumo.addRow(new Object[]{" Total de entradas", String.format("R$ %.2f ", relatorio.getTotalEntradas())});
+                    modelResumo.addRow(new Object[]{" Total de saídas", String.format("R$ %.2f ", relatorio.getTotalSaidas())});
+                    modelResumo.addRow(new Object[]{" Saldo do período", String.format("R$ %.2f ", relatorio.getSaldoFinal())});
+
+                    DefaultTableModel modelMov = (DefaultTableModel) tableMov.getModel();
+                    modelMov.setRowCount(0);
+
+                    SimpleDateFormat formatoData = new SimpleDateFormat("dd/MM/yyyy");
+                    if (listaMovimentos != null) {
+                        for (Financeiro f : listaMovimentos) {
+                            modelMov.addRow(new Object[]{
+                                    " " + formatoData.format(f.getData()),
+                                    " " + f.getTipo(),
+                                    String.format("R$ %.2f ", f.getValor())
+                            });
+                        }
+                    }
+
+                    tableResumo.revalidate();
+                    tableResumo.repaint();
+                    tableMov.revalidate();
+                    tableMov.repaint();
+                    revalidate();
+                    repaint();
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        worker.execute();
     }
 
     private void criarCard(JPanel container, String texto, JLabel labelValor, Color cor, int x, int y) {
@@ -359,46 +354,29 @@ public class PainelResumoFinanceiro extends JPanel {
     }
 
     private class ScrollBarProfissionalUI extends BasicScrollBarUI {
-
         @Override
         public void installUI(JComponent c) {
             super.installUI(c);
             c.setOpaque(false);
         }
-
         @Override
         protected void paintTrack(Graphics g, JComponent c, Rectangle trackBounds) {}
-
         @Override
         protected void paintThumb(Graphics g, JComponent c, Rectangle thumbBounds) {
-            if (thumbBounds.isEmpty() || !c.isEnabled()) {
-                return;
-            }
-
+            if (thumbBounds.isEmpty() || !c.isEnabled()) return;
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-            if (isThumbRollover()) {
-                g2.setColor(new Color(165, 105, 20));
-            } else {
-                g2.setColor(new Color(205, 145, 55));
-            }
-
+            g2.setColor(isThumbRollover() ? new Color(165, 105, 20) : new Color(205, 145, 55));
             g2.fillRoundRect(thumbBounds.x, thumbBounds.y, thumbBounds.width, thumbBounds.height, 8, 8);
             g2.dispose();
         }
-
         @Override
         protected JButton createDecreaseButton(int orientation) { return criarBotaoInvisivel(); }
-
         @Override
         protected JButton createIncreaseButton(int orientation) { return criarBotaoInvisivel(); }
-
         private JButton criarBotaoInvisivel() {
             JButton btn = new JButton();
             btn.setPreferredSize(new Dimension(0, 0));
-            btn.setMinimumSize(new Dimension(0, 0));
-            btn.setMaximumSize(new Dimension(0, 0));
             return btn;
         }
     }

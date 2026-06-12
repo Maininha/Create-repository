@@ -4,11 +4,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Date;
+import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
-import model.Financeiro;
-import model.Conexao;
 
 public class FinanceiroDAO {
 
@@ -18,8 +17,11 @@ public class FinanceiroDAO {
         try (Connection conn = Conexao.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setDate(1, new Date(financeiro.getData().getTime()));
-            stmt.setDouble(2, financeiro.getValor());
+            stmt.setTimestamp(1, new Timestamp(financeiro.getData().getTime()));
+
+            // 🛠️ BLINDAGEM: Garante que o banco NUNCA armazene sinais de menos ou mais. Sempre salva o valor absoluto.
+            stmt.setDouble(2, Math.abs(financeiro.getValor()));
+
             stmt.setString(3, financeiro.getDesc());
             stmt.setString(4, financeiro.getCat());
             stmt.setString(5, financeiro.getTipo());
@@ -33,7 +35,10 @@ public class FinanceiroDAO {
     }
 
     public List<Financeiro> listar(String tipoFiltro, java.util.Date dataInicio, java.util.Date dataFim) {
-        StringBuilder sql = new StringBuilder("SELECT id_mov, data_mov, valor, descricao, categoria, tipo FROM financeiro WHERE 1=1");
+        // 🛠️ CORREÇÃO DE DADOS LEGADOS: O uso de ABS(valor) na Query limpa em tempo real os registros poluídos antigos (ex: -10000,00 vira 10000,00)
+        StringBuilder sql = new StringBuilder(
+                "SELECT id_mov, data_mov, ABS(valor) AS valor_limpo, descricao, categoria, tipo FROM financeiro WHERE 1=1"
+        );
 
         if (tipoFiltro != null && !tipoFiltro.equals("Todos")) {
             sql.append(" AND tipo = ?");
@@ -57,18 +62,33 @@ public class FinanceiroDAO {
                 stmt.setString(paramIndex++, tipoFiltro);
             }
             if (dataInicio != null) {
-                stmt.setDate(paramIndex++, new Date(dataInicio.getTime()));
+                Calendar calInic = Calendar.getInstance();
+                calInic.setTime(dataInicio);
+                calInic.set(Calendar.HOUR_OF_DAY, 0);
+                calInic.set(Calendar.MINUTE, 0);
+                calInic.set(Calendar.SECOND, 0);
+                calInic.set(Calendar.MILLISECOND, 0);
+                stmt.setTimestamp(paramIndex++, new Timestamp(calInic.getTimeInMillis()));
             }
             if (dataFim != null) {
-                stmt.setDate(paramIndex++, new Date(dataFim.getTime()));
+                Calendar calFim = Calendar.getInstance();
+                calFim.setTime(dataFim);
+                calFim.set(Calendar.HOUR_OF_DAY, 23);
+                calFim.set(Calendar.MINUTE, 59);
+                calFim.set(Calendar.SECOND, 59);
+                calFim.set(Calendar.MILLISECOND, 999);
+                stmt.setTimestamp(paramIndex++, new Timestamp(calFim.getTimeInMillis()));
             }
 
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     Financeiro f = new Financeiro();
                     f.setIdMov(rs.getInt("id_mov"));
-                    f.setData(rs.getDate("data_mov"));
-                    f.setValor(rs.getDouble("valor"));
+                    f.setData(rs.getTimestamp("data_mov"));
+
+                    // Recupera o valor devidamente higienizado pelo banco de dados
+                    f.setValor(rs.getDouble("valor_limpo"));
+
                     f.setDesc(rs.getString("descricao"));
                     f.setCat(rs.getString("categoria"));
                     f.setTipo(rs.getString("tipo"));
@@ -83,17 +103,17 @@ public class FinanceiroDAO {
         return lista;
     }
 
-    // ========================================================================
-    // MÉTODO DE ATUALIZAÇÃO (EDITAR)
-    // ========================================================================
     public boolean atualizar(Financeiro financeiro) {
         String sql = "UPDATE financeiro SET data_mov = ?, valor = ?, descricao = ?, categoria = ?, tipo = ? WHERE id_mov = ?";
 
         try (Connection conn = Conexao.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setDate(1, new Date(financeiro.getData().getTime()));
-            stmt.setDouble(2, financeiro.getValor());
+            stmt.setTimestamp(1, new Timestamp(financeiro.getData().getTime()));
+
+            // 🛠️ BLINDAGEM: Impede a inserção de sinais negativos também durante as edições/atualizações
+            stmt.setDouble(2, Math.abs(financeiro.getValor()));
+
             stmt.setString(3, financeiro.getDesc());
             stmt.setString(4, financeiro.getCat());
             stmt.setString(5, financeiro.getTipo());
@@ -122,27 +142,6 @@ public class FinanceiroDAO {
         }
     }
 
-    // ========================================================================
-    // 🔥 NOVO MÉTODO: SALVAR HISTÓRICO DE RELATÓRIOS
-    // ========================================================================
-    public boolean salvarRelatorioNoBanco(java.util.Date periodoInicial, java.util.Date periodoFinal, double entradas, double saidas, double saldo) {
-        String sql = "INSERT INTO relatorio (periodo_inicial, periodo_final, total_entradas, total_saidas, saldo_final) VALUES (?, ?, ?, ?, ?)";
-
-        try (Connection conn = Conexao.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            // Converte o java.util.Date recebido da View para o java.sql.Date do JDBC
-            stmt.setDate(1, new Date(periodoInicial.getTime()));
-            stmt.setDate(2, new Date(periodoFinal.getTime()));
-            stmt.setDouble(3, entradas);
-            stmt.setDouble(4, saidas);
-            stmt.setDouble(5, saldo);
-
-            return stmt.executeUpdate() > 0;
-
-        } catch (SQLException e) {
-            System.err.println("Erro ao salvar dados consolidantes do relatório: " + e.getMessage());
-            return false;
-        }
-    }
+    // 🛠️ REMOÇÃO ARQUITETURAL: O método 'salvarRelatorioNoBanco' foi removido deste DAO,
+    // pois a responsabilidade de gerenciar a tabela 'relatorio' pertence unicamente à classe RelatorioDAO.
 }
