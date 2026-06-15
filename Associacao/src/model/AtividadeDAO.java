@@ -6,7 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-// Se a sua classe de conexão estiver em outro pacote (ex: factory.Conexao), importe-a aqui
+
 
 public class AtividadeDAO {
 

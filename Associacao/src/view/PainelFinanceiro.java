@@ -86,6 +86,7 @@ public class PainelFinanceiro extends JPanel {
         btnCal1.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnCal1.addActionListener(e -> {
             JFrame topo = (JFrame) SwingUtilities.getWindowAncestor(this);
+            // Certifique-se de que a classe DatePickerNativo existe no pacote util ou view
             String selecionada = new DatePickerNativo().exibirCalendario(topo, data1);
             if (!selecionada.equals("")) data1.setText(selecionada);
             vincularFechamentoAutomatico();
@@ -129,7 +130,6 @@ public class PainelFinanceiro extends JPanel {
             public boolean isCellEditable(int row, int column) { return false; }
         };
 
-        // Otimização visual da tabela para coloração de créditos e débitos
         tabela = new JTable(modelo) {
             @Override
             public Component prepareRenderer(javax.swing.table.TableCellRenderer renderer, int row, int column) {
@@ -189,7 +189,6 @@ public class PainelFinanceiro extends JPanel {
         JSeparator divisor = new JSeparator();
         divisor.setForeground(new Color(240, 240, 240));
 
-        // 🛠️ BLOCO CORRIGIDO COM SANITIZAÇÃO DECIMAL PRECISA
         menuEditar.addActionListener(ev -> {
             int linha = tabela.getSelectedRow();
             if (linha != -1) {
@@ -201,10 +200,8 @@ public class PainelFinanceiro extends JPanel {
                     String descricao = tabela.getValueAt(linha, 4).toString();
                     String valorBruto = tabela.getValueAt(linha, 5).toString();
 
-                    // Remove "R$", espaços, sinais de + ou - externos
                     String valorLimpo = valorBruto.replaceAll("[R$\\s\\+\\-]", "");
 
-                    // Garante a conversão da vírgula PT-BR para ponto decimal US sem perder casas centesimais
                     if (valorLimpo.contains(",") && valorLimpo.contains(".")) {
                         valorLimpo = valorLimpo.replace(".", "").replace(",", ".");
                     } else if (valorLimpo.contains(",")) {

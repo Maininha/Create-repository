@@ -195,7 +195,7 @@ public class PainelResumoFinanceiro extends JPanel {
                     relatorioController.gerarRelatorioPorPeriodo(dataInicio, dataFim, "Mensal");
 
                     FinanceiroDAO financeiroDAO = new FinanceiroDAO();
-                    List<Financeiro> movimentacoesPeriodo = financeiroDAO.listar("Todos", dataInicio, dataFim);
+                    List<Financeiro> movimentacoesPeriodo = financeiroDAO.listarPorPeriodo("Todos", dataInicio, dataFim);
 
                     if (movimentacoesPeriodo != null) {
                         GeradorPdfRelatorio.gerarRelatorioFinanceiro(movimentacoesPeriodo);
@@ -246,7 +246,7 @@ public class PainelResumoFinanceiro extends JPanel {
             @Override
             protected Relatorio doInBackground() throws Exception {
                 FinanceiroDAO financeiroDAO = new FinanceiroDAO();
-                listaMovimentos = financeiroDAO.listar("Todos", dataInicio, dataFim);
+                listaMovimentos = financeiroDAO.listarPorPeriodo("Todos", dataInicio, dataFim);
                 return relatorioController.gerarRelatorioPorPeriodo(dataInicio, dataFim, "Mensal");
             }
 
@@ -374,6 +374,7 @@ public class PainelResumoFinanceiro extends JPanel {
         protected JButton createDecreaseButton(int orientation) { return criarBotaoInvisivel(); }
         @Override
         protected JButton createIncreaseButton(int orientation) { return criarBotaoInvisivel(); }
+
         private JButton criarBotaoInvisivel() {
             JButton btn = new JButton();
             btn.setPreferredSize(new Dimension(0, 0));

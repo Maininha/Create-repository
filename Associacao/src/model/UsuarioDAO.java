@@ -40,7 +40,12 @@ public class UsuarioDAO {
 
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    return new Usuario(rs.getString("cpf"), rs.getString("senha"));
+                    // 🛠️ CORREÇÃO AQUI: Instancia com o construtor vazio e alimenta com os setters
+                    Usuario usuario = new Usuario();
+                    usuario.setId(rs.getInt("id"));
+                    usuario.setCpf(rs.getString("cpf"));
+                    usuario.setSenha(rs.getString("senha"));
+                    return usuario;
                 }
             }
         } catch (Exception e) {

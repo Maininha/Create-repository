@@ -1,10 +1,10 @@
 package view;
 
 import controller.ControllerListarAssociado;
-import controller.ControllerCadastroAssociado;
-import controller.ControllerLogin; // Import adicionado para o Logout reconstruir o fluxo
+import controller.ControllerCadastroAssociado; // Import garantido
+import controller.ControllerLogin;
 import model.AssociadoDAO;
-import model.UsuarioDAO; // Import adicionado para fornecer o banco de dados à tela de login
+import model.UsuarioDAO;
 
 import javax.swing.*;
 import java.awt.*;
@@ -31,7 +31,7 @@ public class TelaPrincipal extends JFrame {
     private PainelResumoFinanceiro painelResumoFinanceiro;
 
     private ControllerListarAssociado controllerListar;
-    private ControllerCadastroAssociado controllerCadastro;
+    private ControllerCadastroAssociado controllerCadastro; // Instância declarada
 
     private final Color COR_MENU = new Color(43, 22, 7);
     private final Color COR_ATIVO = new Color(185, 120, 30);
@@ -40,7 +40,6 @@ public class TelaPrincipal extends JFrame {
         setTitle("Sistema de Gestão Quilombola");
         setSize(1366, 768);
 
-        // 🛠️ GARANTE O ISOLAMENTO DE JANELAS (Evita que uma janela interfira no ciclo da outra)
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
         setLocationRelativeTo(null);
@@ -60,6 +59,9 @@ public class TelaPrincipal extends JFrame {
 
                 AssociadoDAO dao = new AssociadoDAO();
                 controllerListar = new ControllerListarAssociado(painelAssociados, painelEditar, this, dao);
+
+                // 🛠️ CORREÇÃO CRÍTICA: Instancia o controlador ligando a tela, os painéis e o banco
+                controllerCadastro = new ControllerCadastroAssociado(this, painelCadastro, painelSenha, dao);
 
                 // Força atualização inicial de dados do banco
                 PainelInicio.dispararAtualizacaoAutomatica();
@@ -259,7 +261,6 @@ public class TelaPrincipal extends JFrame {
             PainelResumoFinanceiro.dispararAtualizacaoAutomatica();
         });
 
-        // 🛠️ BLINDAGEM DO LOGOUT: Reseta completamente o botão para evitar duplicações na Thread
         for (java.awt.event.ActionListener al : btSair.getActionListeners()) {
             btSair.removeActionListener(al);
         }
@@ -274,17 +275,14 @@ public class TelaPrincipal extends JFrame {
             );
 
             if (resposta == JOptionPane.YES_OPTION) {
-                // 1. Limpa de vez quaisquer listeners remanescentes de eventos de janela
                 for (java.awt.event.WindowListener wl : this.getWindowListeners()) {
                     this.removeWindowListener(wl);
                 }
 
-                // 2. Transfere a destruição e a troca de janelas para a Thread Gráfica correta do Swing
                 SwingUtilities.invokeLater(() -> {
                     this.setVisible(false);
                     this.dispose();
 
-                    // 3. Reconstrói do zero a Tela de Login e o Controller de forma isolada
                     TelaLogin login = new TelaLogin();
                     UsuarioDAO usuarioDao = new UsuarioDAO();
 
@@ -329,5 +327,7 @@ public class TelaPrincipal extends JFrame {
     public PainelFinanceiro getPainelFinanceiro() { return painelFinanceiro; }
     public PainelNovaMovimentacao getPainelNovaMovimentacao() { return painelNovaMovimentacao; }
     public PainelResumoFinanceiro getPainelResumoFinanceiro() { return painelResumoFinanceiro; }
+
     public ControllerListarAssociado getControllerListar() { return controllerListar; }
+    public ControllerCadastroAssociado getControllerCadastro() { return controllerCadastro; } // Getter adicionado
 }

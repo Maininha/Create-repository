@@ -23,6 +23,7 @@ public class ControllerCadastroAssociado {
 
     private ActionListener acaoCadastrar;
     private ActionListener acaoFinalizar;
+    private ActionListener acaoVoltar;
 
     public ControllerCadastroAssociado(
             TelaPrincipal telaCadastro,
@@ -39,11 +40,15 @@ public class ControllerCadastroAssociado {
     }
 
     private void configurarEventos() {
+
         if (acaoCadastrar != null) {
             painelCadastro.getBtnCadastrar().removeActionListener(acaoCadastrar);
         }
         if (acaoFinalizar != null) {
             painelSenha.getBtnFinalizar().removeActionListener(acaoFinalizar);
+        }
+        if (acaoVoltar != null) {
+            painelCadastro.getBtnVoltarLink().removeActionListener(acaoVoltar);
         }
 
         for (ActionListener al : painelCadastro.getBtnCadastrar().getActionListeners()) {
@@ -52,12 +57,31 @@ public class ControllerCadastroAssociado {
         for (ActionListener al : painelSenha.getBtnFinalizar().getActionListeners()) {
             painelSenha.getBtnFinalizar().removeActionListener(al);
         }
+        for (ActionListener al : painelCadastro.getBtnVoltarLink().getActionListeners()) {
+            painelCadastro.getBtnVoltarLink().removeActionListener(al);
+        }
+
 
         acaoCadastrar = e -> processarPrimeiraEtapa();
         acaoFinalizar = e -> finalizarCadastroGestor();
 
+
+        acaoVoltar = e -> {
+            if (telaCadastro != null && telaCadastro.getCard() != null) {
+                limparFormulario();
+
+                telaCadastro.getCard().show(telaCadastro.getPainelConteudo(), "listarAssociados");
+                telaCadastro.alternarCorBotao(telaCadastro.getBtAssociados());
+
+                telaCadastro.getPainelConteudo().revalidate();
+                telaCadastro.getPainelConteudo().repaint();
+            }
+        };
+
+
         painelCadastro.getBtnCadastrar().addActionListener(acaoCadastrar);
         painelSenha.getBtnFinalizar().addActionListener(acaoFinalizar);
+        painelCadastro.getBtnVoltarLink().addActionListener(acaoVoltar);
     }
 
     private void processarPrimeiraEtapa() {
@@ -78,12 +102,10 @@ public class ControllerCadastroAssociado {
             return;
         }
 
-
         String cpf = cpfRaw.replaceAll("[^0-9]", "");
         if (cpf.length() > 11) {
             cpf = cpf.substring(0, 11);
         }
-
 
         if (cpf.length() != 11 || cpf.matches("(\\d)\\1{10}")) {
             JOptionPane.showMessageDialog(
@@ -112,7 +134,7 @@ public class ControllerCadastroAssociado {
         if (painelCadastro.getRbAssociado().isSelected()) {
             Usuario u = new Usuario(cpfTemp, "");
             u.setNome(nomeTemp);
-            u.setTipoPerfil("Associado");
+            u.setTipoAssociado("Associado");
             u.setEndereco(enderecoTemp);
 
             boolean ok = dao.inserir(u);
@@ -121,6 +143,12 @@ public class ControllerCadastroAssociado {
                 JOptionPane.showMessageDialog(telaCadastro, "Associado cadastrado com sucesso!");
                 atualizarListagemTelas();
                 limparFormulario();
+
+                // 🛠️ CORREÇÃO: ID alterado aqui também para redirecionar corretamente após o sucesso
+                if (telaCadastro != null && telaCadastro.getCard() != null) {
+                    telaCadastro.getCard().show(telaCadastro.getPainelConteudo(), "listarAssociados");
+                    telaCadastro.alternarCorBotao(telaCadastro.getBtAssociados());
+                }
             } else {
                 JOptionPane.showMessageDialog(telaCadastro, "Erro ao salvar associado!", "Erro", JOptionPane.ERROR_MESSAGE);
             }
@@ -150,7 +178,7 @@ public class ControllerCadastroAssociado {
 
         Usuario u = new Usuario(cpfTemp, _senha);
         u.setNome(nomeTemp);
-        u.setTipoPerfil("Gestor");
+        u.setTipoAssociado("Gestor");
         u.setEndereco(enderecoTemp);
 
         boolean ok = dao.inserir(u);
@@ -165,7 +193,9 @@ public class ControllerCadastroAssociado {
             painelSenha.getTxtConfirmarSenha().setText("");
 
             if (telaCadastro != null && telaCadastro.getCard() != null) {
+                // 🛠️ CORREÇÃO: ID alterado aqui também para fechar o fluxo do gestor
                 telaCadastro.getCard().show(telaCadastro.getPainelConteudo(), "listarAssociados");
+                telaCadastro.alternarCorBotao(telaCadastro.getBtAssociados());
                 telaCadastro.getPainelConteudo().revalidate();
                 telaCadastro.getPainelConteudo().repaint();
             }

@@ -10,14 +10,12 @@ import java.awt.*;
 
 public class PainelNovaMovimentacao extends JPanel {
 
-    // Componentes promovidos a atributos para permitir o preenchimento externo
     private JComboBox<String> combo;
     private JComboBox<String> comboClassificacao;
     private JTextArea area;
     private JTextField txtValor;
     private JLabel titulo;
 
-    // Variável de controle: se for -1 é inserção, se for maior que 0 é edição
     private int idMovEdicao = -1;
     private String dataOriginalEdicao = "";
 
@@ -26,14 +24,12 @@ public class PainelNovaMovimentacao extends JPanel {
         setLayout(null);
         setBackground(new Color(248, 245, 240));
 
-        // TÍTULO
         titulo = new JLabel("Nova movimentação");
         titulo.setFont(new Font("Segoe UI", Font.BOLD, 30));
         titulo.setForeground(new Color(70, 40, 15));
         titulo.setBounds(40, 20, 400, 40);
         add(titulo);
 
-        // TIPO MOVIMENTAÇÃO
         JLabel lblTipo = new JLabel("Tipo movimentação");
         lblTipo.setFont(new Font("Segoe UI", Font.BOLD, 14));
         lblTipo.setBounds(40, 100, 200, 20);
@@ -47,7 +43,6 @@ public class PainelNovaMovimentacao extends JPanel {
         combo.setBorder(BorderFactory.createLineBorder(new Color(220, 220, 220)));
         add(combo);
 
-        // CLASSIFICAÇÃO
         JLabel classificacao = new JLabel("Classificação");
         classificacao.setFont(new Font("Segoe UI", Font.BOLD, 14));
         classificacao.setBounds(380, 100, 200, 20);
@@ -63,7 +58,6 @@ public class PainelNovaMovimentacao extends JPanel {
         comboClassificacao.setBorder(BorderFactory.createLineBorder(new Color(220, 220, 220)));
         add(comboClassificacao);
 
-        // Listener para alternar os itens da classificação dinamicamente
         combo.addActionListener(e -> {
             String selecionado = (String) combo.getSelectedItem();
             if (selecionado == null) return;
@@ -90,7 +84,6 @@ public class PainelNovaMovimentacao extends JPanel {
             }
         });
 
-        // DESCRIÇÃO
         JLabel descricao = new JLabel("Descrição");
         descricao.setFont(new Font("Segoe UI", Font.BOLD, 14));
         descricao.setBounds(40, 200, 150, 20);
@@ -104,7 +97,6 @@ public class PainelNovaMovimentacao extends JPanel {
         scroll.setBounds(40, 230, 640, 120);
         add(scroll);
 
-        // VALOR
         JLabel valor = new JLabel("Valor");
         valor.setFont(new Font("Segoe UI", Font.BOLD, 14));
         valor.setBounds(40, 380, 100, 20);
@@ -114,7 +106,6 @@ public class PainelNovaMovimentacao extends JPanel {
         txtValor.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         txtValor.setBounds(40, 410, 300, 40);
 
-        // Atendimento ao RNF06: Impede digitação de caracteres inválidos no campo monetário
         ((AbstractDocument) txtValor.getDocument()).setDocumentFilter(new DocumentFilter() {
             @Override
             public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr) throws BadLocationException {
@@ -134,7 +125,6 @@ public class PainelNovaMovimentacao extends JPanel {
         });
         add(txtValor);
 
-        // BOTÃO SALVAR
         JButton salvar = new JButton("Salvar");
         salvar.setBounds(40, 500, 140, 45);
         salvar.setBackground(new Color(185, 120, 30));
@@ -144,7 +134,6 @@ public class PainelNovaMovimentacao extends JPanel {
         salvar.setCursor(new Cursor(Cursor.HAND_CURSOR));
         add(salvar);
 
-        // BOTÃO CANCELAR
         JButton cancelar = new JButton("Cancelar");
         cancelar.setBounds(200, 500, 140, 45);
         cancelar.setBackground(Color.WHITE);
@@ -156,14 +145,12 @@ public class PainelNovaMovimentacao extends JPanel {
 
         FinanceiroController financeiroController = new FinanceiroController();
 
-        // Ação Dinâmica do Botão Salvar (Detecta se é INSERT ou UPDATE)
         salvar.addActionListener(e -> {
             String tipoSelecionado = (String) combo.getSelectedItem();
             String categoriaSelecionada = (String) comboClassificacao.getSelectedItem();
             String descTexto = area.getText().trim();
             String valorTexto = txtValor.getText().trim();
 
-            // Atendimento ao RF05: Validação de consistência obrigatória
             if (descTexto.isEmpty() || valorTexto.isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Por favor, preencha a Descrição e o Valor antes de salvar.", "Campos Obrigatórios", JOptionPane.ERROR_MESSAGE);
                 return;
@@ -172,12 +159,13 @@ public class PainelNovaMovimentacao extends JPanel {
             boolean sucesso;
 
             if (idMovEdicao == -1) {
+                String cpfLogado = model.Usuario.getUsuarioLogado().getCpf();
                 sucesso = financeiroController.salvarMovimentacao(
-                        tipoSelecionado, categoriaSelecionada, descTexto, valorTexto
+                        tipoSelecionado, categoriaSelecionada, descTexto, valorTexto, cpfLogado
                 );
             } else {
                 sucesso = financeiroController.editarMovimentacao(
-                        idMovEdicao, tipoSelecionado, categoriaSelecionada, descTexto, valorTexto, dataOriginalEdicao
+                        idMovEdicao, tipoSelecionado, categoriaSelecionada, descTexto, valorTexto
                 );
             }
 
@@ -186,7 +174,6 @@ public class PainelNovaMovimentacao extends JPanel {
             }
         });
 
-        // Ação do Botão Cancelar
         cancelar.addActionListener(e -> {
             int resposta = JOptionPane.showConfirmDialog(
                     this,
@@ -226,7 +213,6 @@ public class PainelNovaMovimentacao extends JPanel {
         this.txtValor.setText(valor.trim());
     }
 
-    // 🛠️ MÉTODO CORRIGIDO E ADAPTADO AO SCROLLPANE DA TELA PRINCIPAL
     private void limparCamposERetornar() {
         this.idMovEdicao = -1;
         this.dataOriginalEdicao = "";
@@ -237,18 +223,14 @@ public class PainelNovaMovimentacao extends JPanel {
 
         SwingUtilities.invokeLater(() -> {
             Container ancestral = this.getParent();
-            // Sobe com segurança contornando os JViewport e JScrollPane criados na TelaPrincipal
             while (ancestral != null && !(ancestral instanceof TelaPrincipal)) {
                 ancestral = ancestral.getParent();
             }
 
             if (ancestral != null) {
                 TelaPrincipal tela = (TelaPrincipal) ancestral;
-
-                // Força a mudança exata do cartão utilizando o CardLayout original da TelaPrincipal
                 tela.getCard().show(tela.getPainelConteudo(), "painelFinanceiro");
 
-                // Localiza o PainelFinanceiro e dispara a consulta de atualização na JTable
                 if (tela.getPainelFinanceiro() != null) {
                     tela.getPainelFinanceiro().executarConsultaAtual();
                 }

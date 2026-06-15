@@ -3,6 +3,7 @@ package controller;
 import model.Associado;
 import model.AssociadoDAO;
 import model.Endereco;
+import model.Usuario; // ✏️ IMPORTANTE: Importar o modelo Usuario
 import view.PainelAssociados;
 import view.PainelEditarAssociado;
 import view.TelaPrincipal;
@@ -37,7 +38,6 @@ public class ControllerListarAssociado {
         painel.limparTabela();
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
 
-
         ArrayList<Associado> listaAssociados = dao.listar();
         if (listaAssociados == null) return;
 
@@ -62,14 +62,13 @@ public class ControllerListarAssociado {
 
     private void eventos() {
 
-        // Limpa listeners antigos do painel editar para evitar duplicações de ações na memória
+
         for (java.awt.event.ActionListener al : editar.getBtnSalvar().getActionListeners()) {
             editar.getBtnSalvar().removeActionListener(al);
         }
         for (java.awt.event.ActionListener al : editar.getBtnCancelar().getActionListeners()) {
             editar.getBtnCancelar().removeActionListener(al);
         }
-
 
         painel.setAcoesListener(new PainelAssociados.AcoesListener() {
 
@@ -113,6 +112,18 @@ public class ControllerListarAssociado {
                         .getValueAt(rowModel, 1)
                         .toString();
 
+
+                Usuario logado = Usuario.getUsuarioLogado();
+                if (logado != null && cpf.equals(logado.getCpf())) {
+                    JOptionPane.showMessageDialog(
+                            frame,
+                            "Você não pode excluir o seu próprio usuário logado!",
+                            "Ação Negada",
+                            JOptionPane.WARNING_MESSAGE
+                    );
+                    return;
+                }
+
                 int resp = JOptionPane.showConfirmDialog(
                         frame,
                         "Tem certeza que deseja excluir este associado?",
@@ -140,7 +151,6 @@ public class ControllerListarAssociado {
             }
         });
 
-
         editar.getBtnSalvar().addActionListener(e -> {
             String cpf = editar.getTxtCpf().getText();
             String nome = editar.getTxtNome().getText();
@@ -162,11 +172,29 @@ public class ControllerListarAssociado {
 
             Endereco end = new Endereco(cidade, estado, referencia, logradouro);
 
-            Associado a = new Associado();
+
+            Associado original = dao.buscarPorCpf(cpf);
+            Associado a;
+
+            if (original instanceof Usuario) {
+                // Se era um usuário/gestor, mantemos como Usuario para não perder a senha
+                Usuario u = new Usuario();
+                u.setSenha(((Usuario) original).getSenha());
+                u.setId(((Usuario) original).getId());
+                a = u;
+                a.setTipoAssociado(original.getTipoAssociado()); // Mantém se era "Gestor", etc.
+            } else {
+                // Se era um associado comum, continua sendo
+                a = new Associado();
+                a.setTipoAssociado("Associado");
+            }
+
             a.setCpf(cpf);
             a.setNome(nome);
             a.setEndereco(end);
-            a.setTipoAssociado("Associado");
+            if (original != null) {
+                a.setDataCadastro(original.getDataCadastro()); // Preserva a data original de cadastro
+            }
 
             boolean ok = dao.atualizarCompleto(a);
 
@@ -187,7 +215,6 @@ public class ControllerListarAssociado {
                 );
             }
         });
-
 
         editar.getBtnCancelar().addActionListener(e -> {
             frame.getCard().show(

@@ -20,6 +20,7 @@ public class PainelCadastroAssociado extends JPanel {
     private JRadioButton rbAssociado;
     private ButtonGroup grupoTipo;
     private JButton btnCadastrar;
+    private JButton btnVoltarLink;
 
     public PainelCadastroAssociado(TelaPrincipal telaPrincipal) {
         this.telaPrincipal = telaPrincipal;
@@ -140,9 +141,8 @@ public class PainelCadastroAssociado extends JPanel {
         btnCadastrar.setBorderPainted(false);
         btnCadastrar.setFocusPainted(false);
         btnCadastrar.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnCadastrar.setBounds(40, 380, 680, 45);
+        btnCadastrar.setBounds(40, 350, 680, 45);
 
-        // 🔥 CORREÇÃO DO HOVER: Usando apenas os gatilhos de entrada/saída visuais
         btnCadastrar.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
@@ -155,9 +155,33 @@ public class PainelCadastroAssociado extends JPanel {
         });
         boxFormulario.add(btnCadastrar);
 
+        // ================= BOTÃO VOLTAR (EMBAIXO) =================
+        btnVoltarLink = new JButton("← Cancelar e voltar para a listagem");
+        btnVoltarLink.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btnVoltarLink.setForeground(new Color(185, 120, 30));
+        btnVoltarLink.setContentAreaFilled(false);
+        btnVoltarLink.setBorderPainted(false);
+        btnVoltarLink.setFocusPainted(false);
+        btnVoltarLink.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnVoltarLink.setHorizontalAlignment(SwingConstants.CENTER);
+        btnVoltarLink.setBounds(40, 410, 680, 30);
+
+        btnVoltarLink.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                btnVoltarLink.setForeground(new Color(43, 22, 7));
+            }
+            @Override
+            public void mouseExited(MouseEvent e) {
+                btnVoltarLink.setForeground(new Color(185, 120, 30));
+            }
+        });
+        boxFormulario.add(btnVoltarLink);
+
         add(boxFormulario);
     }
 
+    // 🛠️ CORREÇÃO AQUI: Alterado de 'voidGrid' para 'void'
     private void estilizarCampo(JTextField campo) {
         campo.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         campo.setBorder(BorderFactory.createCompoundBorder(
@@ -180,4 +204,5 @@ public class PainelCadastroAssociado extends JPanel {
     public JRadioButton getRbGestor() { return rbGestor; }
     public JRadioButton getRbAssociado() { return rbAssociado; }
     public JButton getBtnCadastrar() { return btnCadastrar; }
+    public JButton getBtnVoltarLink() { return btnVoltarLink; }
 }

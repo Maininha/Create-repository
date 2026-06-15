@@ -7,7 +7,6 @@ import java.util.ArrayList;
 
 public class AssociadoDAO {
 
-
     public boolean existeCpf(String cpf) {
         String sql = "SELECT COUNT(*) FROM associados WHERE cpf = ?";
         String cpfTratado = cpf.replaceAll("[^0-9]", "").trim();
@@ -29,7 +28,6 @@ public class AssociadoDAO {
         return false;
     }
 
-
     private String criptografarSenha(String senhaOriginal) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -46,7 +44,6 @@ public class AssociadoDAO {
             return senhaOriginal;
         }
     }
-
 
     public ArrayList<Associado> listar() {
         ArrayList<Associado> lista = new ArrayList<>();
@@ -82,7 +79,6 @@ public class AssociadoDAO {
         }
         return lista;
     }
-
 
     public Associado buscarPorCpf(String cpf) {
         String sql = "SELECT a.cpf, a.nome, a.data_cadastro, a.tipo_perfil, " +
@@ -123,7 +119,6 @@ public class AssociadoDAO {
         return null;
     }
 
-
     public boolean excluir(String cpf) {
         String sqlDeleteAssociado = "DELETE FROM associados WHERE cpf = ?";
         String sqlDeleteEndereco = "DELETE FROM enderecos WHERE id = ?";
@@ -150,12 +145,10 @@ public class AssociadoDAO {
                 }
             }
 
-
             try (PreparedStatement stmt = conn.prepareStatement(sqlDeleteAssociado)) {
                 stmt.setString(1, cpfTratado);
                 stmt.executeUpdate();
             }
-
 
             if (idEndereco > 0) {
                 try (PreparedStatement stmt = conn.prepareStatement(sqlDeleteEndereco)) {
@@ -163,7 +156,6 @@ public class AssociadoDAO {
                     stmt.executeUpdate();
                 }
             }
-
 
             if (idUsuario > 0) {
                 try (PreparedStatement stmt = conn.prepareStatement(sqlDeleteUsuario)) {
@@ -188,11 +180,12 @@ public class AssociadoDAO {
         }
     }
 
-
+    // 🛠️ CORREÇÃO DA NOMENCLATURA: De "actualizarCompleto" para "atualizarCompleto"
     public boolean atualizarCompleto(Associado associado) {
-        String sqlBuscarEndereco = "SELECT id_endereco FROM associados WHERE cpf = ?";
-        String sqlUpdateAssociado = "UPDATE associados SET nome = ? WHERE cpf = ?";
+        String sqlBuscarEndereco = "SELECT id_endereco, id_usuario FROM associados WHERE cpf = ?";
+        String sqlUpdateAssociado = "UPDATE associados SET nome = ?, tipo_perfil = ? WHERE cpf = ?";
         String sqlUpdateEndereco = "UPDATE enderecos SET cidade = ?, estado = ?, referencia = ?, logradouro = ? WHERE id = ?";
+        String sqlUpdateUsuario = "UPDATE usuario SET nome = ? WHERE id = ?";
 
         String cpfTratado = associado.getCpf().replaceAll("[^0-9]", "").trim();
         Connection conn = null;
@@ -202,19 +195,23 @@ public class AssociadoDAO {
             conn.setAutoCommit(false);
 
             int idEndereco = -1;
+            int idUsuario = -1;
 
             try (PreparedStatement stmt = conn.prepareStatement(sqlBuscarEndereco)) {
                 stmt.setString(1, cpfTratado);
                 try (ResultSet rs = stmt.executeQuery()) {
                     if (rs.next()) {
                         idEndereco = rs.getInt("id_endereco");
+                        idUsuario = rs.getInt("id_usuario");
+                        if (rs.wasNull()) idUsuario = -1;
                     }
                 }
             }
 
             try (PreparedStatement stmt = conn.prepareStatement(sqlUpdateAssociado)) {
                 stmt.setString(1, associado.getNome());
-                stmt.setString(2, cpfTratado);
+                stmt.setString(2, associado.getTipoAssociado());
+                stmt.setString(3, cpfTratado);
                 stmt.executeUpdate();
             }
 
@@ -225,6 +222,15 @@ public class AssociadoDAO {
                     stmt.setString(3, associado.getEndereco().getReferencia());
                     stmt.setString(4, associado.getEndereco().getLogradouro());
                     stmt.setInt(5, idEndereco);
+                    stmt.executeUpdate();
+                }
+            }
+
+            // 🛠️ Tratamento polimórfico: se for um Usuario (Gestor), atualiza o nome dele na tabela usuario também
+            if (idUsuario > 0 && associado instanceof Usuario) {
+                try (PreparedStatement stmt = conn.prepareStatement(sqlUpdateUsuario)) {
+                    stmt.setString(1, associado.getNome());
+                    stmt.setInt(2, idUsuario);
                     stmt.executeUpdate();
                 }
             }
@@ -244,7 +250,6 @@ public class AssociadoDAO {
             }
         }
     }
-
 
     public boolean inserir(Usuario usuario) {
         String sqlEndereco = "INSERT INTO enderecos (cidade, estado, referencia, logradouro) VALUES (?, ?, ?, ?)";
@@ -290,7 +295,7 @@ public class AssociadoDAO {
                 stmt.setString(1, cpfTratado);
                 stmt.setString(2, usuario.getNome());
                 stmt.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
-                stmt.setString(4, usuario.getTipoPerfil());
+                stmt.setString(4, usuario.getTipoAssociado());
                 stmt.setInt(5, idEndereco);
 
                 if (idUsuario != null) stmt.setInt(6, idUsuario);

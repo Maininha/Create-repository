@@ -12,7 +12,6 @@ public class ControllerLogin {
     public ControllerLogin(TelaLogin view, UsuarioDAO dao) {
         this.view = view;
         this.dao = dao;
-
         eventos();
     }
 
@@ -34,12 +33,14 @@ public class ControllerLogin {
         Usuario u = dao.autenticar(cpf, senha);
 
         if (u != null) {
-            view.exibirMensagem("Login realizado com sucesso!");
 
+            u.setCpf(cpf);
+            Usuario.setUsuarioLogado(u);
+
+            view.exibirMensagem("Login realizado com sucesso!");
 
             view.setVisible(false);
             view.dispose();
-
 
             new ControllerPrincipal();
         } else {
