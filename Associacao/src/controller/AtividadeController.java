@@ -12,6 +12,7 @@ public class AtividadeController {
     }
 
     public List<Atividade> obterCronogramaAtividades() {
+
         return dao.buscarHistoricoRecente();
     }
 }

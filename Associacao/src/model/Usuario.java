@@ -1,18 +1,17 @@
 package model;
 
-// Herança da classe pai 'Associado'
 public class Usuario extends Associado {
     private int id;
     private String senha;
 
     private static Usuario usuarioLogado;
 
-    // Construtor vazio essencial para o preenchimento do DAO
+
     public Usuario() {
-        super(); // Chama o construtor da classe pai Associado
+        super();
     }
 
-    // Construtor com parâmetros para uso em outras partes do sistema
+
     public Usuario(String cpf, String senha) {
         this(); // Chama o construtor vazio local
         this.setCpf(cpf); // Define o CPF usando o método herdado de Associado

@@ -6,7 +6,13 @@ import javax.swing.text.AbstractDocument;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DocumentFilter;
+import javax.swing.text.MaskFormatter;
 import java.awt.*;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class PainelNovaMovimentacao extends JPanel {
 
@@ -14,10 +20,15 @@ public class PainelNovaMovimentacao extends JPanel {
     private JComboBox<String> comboClassificacao;
     private JTextArea area;
     private JTextField txtValor;
+    private JFormattedTextField txtData;
     private JLabel titulo;
 
     private int idMovEdicao = -1;
     private String dataOriginalEdicao = "";
+
+    private final String PLACEHOLDER_DESC = "Ex: Doação de insumos ou pagamento de taxa de associado...";
+    private final Color COR_OBRIGATORIO = new Color(211, 47, 47);
+    private final Color COR_TEXTO_PADRAO = new Color(35, 18, 4);
 
     public PainelNovaMovimentacao() {
 
@@ -30,31 +41,29 @@ public class PainelNovaMovimentacao extends JPanel {
         titulo.setBounds(40, 20, 400, 40);
         add(titulo);
 
-        JLabel lblTipo = new JLabel("Tipo movimentação");
-        lblTipo.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        lblTipo.setBounds(40, 100, 200, 20);
+        // ------------------ TIPO MOVIMENTAÇÃO ------------------
+        JLabel lblTipo = criarLabelComObrigatorio("Tipo movimentação", 40, 90, 200, 20);
         add(lblTipo);
 
         combo = new JComboBox<>(new String[]{"Entrada", "Saída"});
-        combo.setBounds(40, 130, 300, 40);
+        combo.setBounds(40, 115, 300, 40);
         combo.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         combo.setBackground(Color.WHITE);
-        combo.setForeground(new Color(35, 18, 4));
+        combo.setForeground(COR_TEXTO_PADRAO);
         combo.setBorder(BorderFactory.createLineBorder(new Color(220, 220, 220)));
         add(combo);
 
-        JLabel classificacao = new JLabel("Classificação");
-        classificacao.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        classificacao.setBounds(380, 100, 200, 20);
+        // ------------------ CLASSIFICAÇÃO ------------------
+        JLabel classificacao = criarLabelComObrigatorio("Classificação", 380, 90, 200, 20);
         add(classificacao);
 
         comboClassificacao = new JComboBox<>(new String[]{
-                "Doação", "Arrecadação", "Mensalidade", "Patrocínio", "Outros"
+                "Doação", "Arrecadação", "Mensalidade", "Patrocínio", "Evento Beneficente", "Outros"
         });
-        comboClassificacao.setBounds(380, 130, 300, 40);
+        comboClassificacao.setBounds(380, 115, 300, 40);
         comboClassificacao.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         comboClassificacao.setBackground(Color.WHITE);
-        comboClassificacao.setForeground(new Color(35, 18, 4));
+        comboClassificacao.setForeground(COR_TEXTO_PADRAO);
         comboClassificacao.setBorder(BorderFactory.createLineBorder(new Color(220, 220, 220)));
         add(comboClassificacao);
 
@@ -84,27 +93,56 @@ public class PainelNovaMovimentacao extends JPanel {
             }
         });
 
-        JLabel descricao = new JLabel("Descrição");
-        descricao.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        descricao.setBounds(40, 200, 150, 20);
+        // ------------------ DESCRIÇÃO ------------------
+        JLabel descricao = criarLabelComObrigatorio("Descrição", 40, 175, 200, 20);
         add(descricao);
 
-        area = new JTextArea();
+        area = new JTextArea(PLACEHOLDER_DESC);
         area.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        area.setForeground(Color.GRAY);
         area.setLineWrap(true);
         area.setWrapStyleWord(true);
+
+        area.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (area.getText().equals(PLACEHOLDER_DESC)) {
+                    area.setText("");
+                    area.setForeground(COR_TEXTO_PADRAO);
+                }
+            }
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (area.getText().trim().isEmpty()) {
+                    area.setText(PLACEHOLDER_DESC);
+                    area.setForeground(Color.GRAY);
+                }
+            }
+        });
+
         JScrollPane scroll = new JScrollPane(area);
-        scroll.setBounds(40, 230, 640, 120);
+        scroll.setBounds(40, 200, 640, 100);
+        scroll.setBorder(BorderFactory.createLineBorder(new Color(220, 220, 220)));
         add(scroll);
 
-        JLabel valor = new JLabel("Valor");
-        valor.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        valor.setBounds(40, 380, 100, 20);
+        // ------------------ VALOR ------------------
+        JLabel valor = criarLabelComObrigatorio("Valor", 40, 320, 100, 20);
         add(valor);
+
+        JPanel painelValor = new JPanel(new BorderLayout());
+        painelValor.setBounds(40, 345, 300, 40);
+        painelValor.setBackground(Color.WHITE);
+        painelValor.setBorder(BorderFactory.createLineBorder(new Color(220, 220, 220)));
+
+        JLabel lblSifrao = new JLabel(" R$ ");
+        lblSifrao.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        lblSifrao.setForeground(Color.GRAY);
+        painelValor.add(lblSifrao, BorderLayout.WEST);
 
         txtValor = new JTextField();
         txtValor.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        txtValor.setBounds(40, 410, 300, 40);
+        txtValor.setBorder(null);
 
         ((AbstractDocument) txtValor.getDocument()).setDocumentFilter(new DocumentFilter() {
             @Override
@@ -123,22 +161,47 @@ public class PainelNovaMovimentacao extends JPanel {
                 }
             }
         });
-        add(txtValor);
 
+        painelValor.add(txtValor, BorderLayout.CENTER);
+        add(painelValor);
+
+        // ------------------ DATA DA MOVIMENTAÇÃO ------------------
+        JLabel lblData = criarLabelComObrigatorio("Data da Movimentação", 380, 320, 200, 20);
+        add(lblData);
+
+        try {
+            MaskFormatter mascaraData = new MaskFormatter("##/##/####");
+            mascaraData.setPlaceholderCharacter('_');
+            txtData = new JFormattedTextField(mascaraData);
+        } catch (ParseException e) {
+            txtData = new JFormattedTextField();
+        }
+
+        txtData.setBounds(380, 345, 300, 40);
+        txtData.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        txtData.setBackground(Color.WHITE);
+        txtData.setForeground(COR_TEXTO_PADRAO);
+        txtData.setBorder(BorderFactory.createLineBorder(new Color(220, 220, 220)));
+        txtData.setText(getDataAtualFormatada());
+        add(txtData);
+
+        // ------------------ BOTÕES DE AÇÃO ------------------
         JButton salvar = new JButton("Salvar");
-        salvar.setBounds(40, 500, 140, 45);
+        salvar.setBounds(40, 430, 140, 45);
         salvar.setBackground(new Color(185, 120, 30));
         salvar.setForeground(Color.WHITE);
         salvar.setFocusPainted(false);
+        salvar.setBorderPainted(false);
         salvar.setFont(new Font("Segoe UI", Font.BOLD, 14));
         salvar.setCursor(new Cursor(Cursor.HAND_CURSOR));
         add(salvar);
 
         JButton cancelar = new JButton("Cancelar");
-        cancelar.setBounds(200, 500, 140, 45);
+        cancelar.setBounds(200, 430, 140, 45);
         cancelar.setBackground(Color.WHITE);
         cancelar.setForeground(Color.DARK_GRAY);
         cancelar.setFocusPainted(false);
+        cancelar.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200)));
         cancelar.setFont(new Font("Segoe UI", Font.BOLD, 14));
         cancelar.setCursor(new Cursor(Cursor.HAND_CURSOR));
         add(cancelar);
@@ -150,16 +213,20 @@ public class PainelNovaMovimentacao extends JPanel {
             String categoriaSelecionada = (String) comboClassificacao.getSelectedItem();
             String descTexto = area.getText().trim();
             String valorTexto = txtValor.getText().trim();
+            String dataTexto = txtData.getText().trim();
 
-            if (descTexto.isEmpty() || valorTexto.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Por favor, preencha a Descrição e o Valor antes de salvar.", "Campos Obrigatórios", JOptionPane.ERROR_MESSAGE);
+            if (descTexto.isEmpty() || descTexto.equals(PLACEHOLDER_DESC) || valorTexto.isEmpty() || dataTexto.contains("_")) {
+                JOptionPane.showMessageDialog(this,
+                        "Por favor, preencha todos os campos obrigatórios (*) com dados válidos.",
+                        "Campos Obrigatórios",
+                        JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
             boolean sucesso;
 
             if (idMovEdicao == -1) {
-                String cpfLogado = model.Usuario.getUsuarioLogado().getCpf();
+                String cpfLogado = model.Usuario.getUsuarioLogado() != null ? model.Usuario.getUsuarioLogado().getCpf() : "";
                 sucesso = financeiroController.salvarMovimentacao(
                         tipoSelecionado, categoriaSelecionada, descTexto, valorTexto, cpfLogado
                 );
@@ -170,23 +237,43 @@ public class PainelNovaMovimentacao extends JPanel {
             }
 
             if (sucesso) {
+                JOptionPane.showMessageDialog(this, idMovEdicao == -1 ? "Movimentação registrada!" : "Movimentação atualizada!");
                 limparCamposERetornar();
             }
         });
 
         cancelar.addActionListener(e -> {
-            int resposta = JOptionPane.showConfirmDialog(
+            // Opções personalizadas em Português
+            Object[] opcoes = {"Sim", "Não"};
+
+            int resposta = JOptionPane.showOptionDialog(
                     this,
-                    "Deseja cancelar a operação e retornar para a consulta?",
-                    "Confirmar",
+                    "Deseja realmente cancelar? Os dados não salvos serão perdidos.",
+                    "Confirmar Cancelamento",
                     JOptionPane.YES_NO_OPTION,
-                    JOptionPane.QUESTION_MESSAGE
+                    JOptionPane.QUESTION_MESSAGE,
+                    null,
+                    opcoes,
+                    opcoes[1] // Mantém o "Não" focado por padrão
             );
 
-            if (resposta == JOptionPane.YES_OPTION) {
+            if (resposta == 0) { // 0 corresponde à opção "Sim"
                 limparCamposERetornar();
             }
         });
+    }
+
+    private JLabel criarLabelComObrigatorio(String texto, int x, int y, int width, int height) {
+        JLabel label = new JLabel("<html>" + texto + " <font color='#D32F2F'>*</font></html>");
+        label.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        label.setForeground(new Color(70, 40, 15));
+        label.setBounds(x, y, width, height);
+        return label;
+    }
+
+    private String getDataAtualFormatada() {
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+        return sdf.format(new Date());
     }
 
     public void preencherCamposParaEdicao(int idMov, String data, String tipo, String categoria, String descricao, String valor) {
@@ -209,32 +296,45 @@ public class PainelNovaMovimentacao extends JPanel {
         }
 
         this.comboClassificacao.setSelectedItem(categoria);
+
         this.area.setText(descricao);
+        this.area.setForeground(COR_TEXTO_PADRAO);
+
         this.txtValor.setText(valor.trim());
+        this.txtData.setText(data != null && !data.isEmpty() ? data : getDataAtualFormatada());
     }
 
     private void limparCamposERetornar() {
+        // 1. Limpa os campos do formulário
         this.idMovEdicao = -1;
         this.dataOriginalEdicao = "";
         this.titulo.setText("Nova movimentação");
         this.combo.setSelectedIndex(0);
-        this.area.setText("");
+
+        this.area.setText(PLACEHOLDER_DESC);
+        this.area.setForeground(Color.GRAY);
+
         this.txtValor.setText("");
+        this.txtData.setText(getDataAtualFormatada());
 
-        SwingUtilities.invokeLater(() -> {
-            Container ancestral = this.getParent();
-            while (ancestral != null && !(ancestral instanceof TelaPrincipal)) {
-                ancestral = ancestral.getParent();
+        // 2. Localiza a instância da TelaPrincipal na árvore de componentes
+        Window janelaAncestral = SwingUtilities.getWindowAncestor(this);
+
+        if (janelaAncestral instanceof TelaPrincipal) {
+            TelaPrincipal tela = (TelaPrincipal) janelaAncestral;
+
+            // 3. Recarrega os dados do painel financeiro se necessário
+            if (tela.getPainelFinanceiro() != null) {
+                tela.getPainelFinanceiro().executarConsultaAtual();
             }
 
-            if (ancestral != null) {
-                TelaPrincipal tela = (TelaPrincipal) ancestral;
-                tela.getCard().show(tela.getPainelConteudo(), "painelFinanceiro");
+            // 4. Exibe a tela usando a chave registrada na TelaPrincipal
+            tela.getCard().show(tela.getPainelConteudo(), "painelFinanceiro");
 
-                if (tela.getPainelFinanceiro() != null) {
-                    tela.getPainelFinanceiro().executarConsultaAtual();
-                }
+            // 5. Atualiza o realce visual do botão do menu lateral
+            if (tela.getBtFinanceiro() != null) {
+                tela.selecionarBotao(tela.getBtFinanceiro());
             }
-        });
+        }
     }
 }

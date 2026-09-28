@@ -24,12 +24,18 @@ public class PainelResumoFinanceiro extends JPanel {
     private JLabel lblValorEntrada;
     private JLabel lblValorSaida;
     private JLabel lblValorSaldo;
-    private JTable tableResumo;
+    private JLabel lblTituloSaldo;
+    private JLabel lblUltimaAtualizacao;
     private JTable tableMov;
     private JComboBox<String> cbPeriodo;
     private JButton btnGerarRelatorio;
 
     private RelatorioController relatorioController;
+
+    // Cores do Tema Quilombola / UI
+    private final Color COR_VERDE = new Color(34, 139, 34);
+    private final Color COR_VERMELHO = new Color(178, 34, 34);
+    private final Color COR_TEXTO_PADRAO = new Color(35, 18, 4);
 
     public PainelResumoFinanceiro() {
         instanciaAtiva = this;
@@ -54,6 +60,7 @@ public class PainelResumoFinanceiro extends JPanel {
         JPanel abaFin = new JPanel(null);
         abaFin.setBackground(new Color(248, 245, 240));
 
+        // Cabecalho
         JLabel titulo = new JLabel("Resumo Financeiro");
         titulo.setFont(new Font("Segoe UI", Font.BOLD, 30));
         titulo.setForeground(new Color(70, 40, 15));
@@ -65,6 +72,7 @@ public class PainelResumoFinanceiro extends JPanel {
         subtitulo.setBounds(40, 60, 400, 20);
         abaFin.add(subtitulo);
 
+        // Filtro de Periodo e Acoes
         JLabel lbPeriodo = new JLabel("Período");
         lbPeriodo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         lbPeriodo.setForeground(Color.GRAY);
@@ -79,7 +87,7 @@ public class PainelResumoFinanceiro extends JPanel {
         cbPeriodo.setBorder(new LineBorder(new Color(180, 180, 180), 1));
         abaFin.add(cbPeriodo);
 
-        btnGerarRelatorio = new JButton("Gerar Relatório");
+        btnGerarRelatorio = new JButton("Exportar PDF");
         btnGerarRelatorio.setFont(new Font("Segoe UI", Font.BOLD, 14));
         btnGerarRelatorio.setBackground(new Color(205, 145, 55));
         btnGerarRelatorio.setForeground(Color.WHITE);
@@ -89,77 +97,60 @@ public class PainelResumoFinanceiro extends JPanel {
         btnGerarRelatorio.setBounds(335, 120, 160, 40);
         abaFin.add(btnGerarRelatorio);
 
+        // Cards de Resumo
         lblValorEntrada = new JLabel("R$ 0,00");
-        criarCard(abaFin, "Total de entrada", lblValorEntrada, new Color(90, 150, 40), 40, 185);
+        lblValorEntrada.setForeground(COR_VERDE);
+        criarCard(abaFin, "Total de entrada", lblValorEntrada, Color.GRAY, 40, 185);
 
         lblValorSaida = new JLabel("R$ 0,00");
-        criarCard(abaFin, "Total saída", lblValorSaida, Color.RED, 410, 185);
+        lblValorSaida.setForeground(COR_VERMELHO);
+        criarCard(abaFin, "Total saída", lblValorSaida, Color.GRAY, 410, 185);
 
         lblValorSaldo = new JLabel("R$ 0,00");
-        criarCard(abaFin, "Saldo atual", lblValorSaldo, Color.BLUE, 780, 185);
+        lblValorSaldo.setForeground(COR_TEXTO_PADRAO);
+        lblTituloSaldo = criarCard(abaFin, "Saldo atual", lblValorSaldo, Color.GRAY, 780, 185);
 
-        JLabel atualizacao = new JLabel("Última atualização.");
-        atualizacao.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        atualizacao.setForeground(Color.GRAY);
-        atualizacao.setBounds(40, 315, 400, 20);
-        abaFin.add(atualizacao);
+        // Timestamp de Ultima Atualizacao
+        lblUltimaAtualizacao = new JLabel("Última atualização: -");
+        lblUltimaAtualizacao.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        lblUltimaAtualizacao.setForeground(Color.GRAY);
+        lblUltimaAtualizacao.setBounds(40, 318, 400, 20);
+        abaFin.add(lblUltimaAtualizacao);
 
-        JLabel tituloResumo = new JLabel("Resumo do Período");
-        tituloResumo.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        tituloResumo.setForeground(new Color(35, 18, 4));
-        tituloResumo.setBounds(40, 340, 250, 25);
-        abaFin.add(tituloResumo);
-
-        JPanel containerResumo = new JPanel(null);
-        containerResumo.setBounds(40, 370, 520, 250);
-        containerResumo.setBackground(Color.WHITE);
-        containerResumo.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(230, 230, 230), 1, true),
-                BorderFactory.createEmptyBorder(10, 10, 10, 10)
-        ));
-
-        String[] colunasResumo = {"Descrição", "Valor"};
-        tableResumo = estilizarTabela(new Object[0][2], colunasResumo);
-
-        JScrollPane scrollResumo = new JScrollPane(tableResumo);
-        scrollResumo.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-        scrollResumo.setBorder(null);
-        scrollResumo.setBounds(10, 10, 495, 230);
-        scrollResumo.setBackground(Color.WHITE);
-        scrollResumo.getViewport().setBackground(Color.WHITE);
-        scrollResumo.getVerticalScrollBar().setUI(new ScrollBarProfissionalUI());
-        scrollResumo.getVerticalScrollBar().setPreferredSize(new Dimension(8, 0));
-
-        containerResumo.add(scrollResumo);
-        abaFin.add(containerResumo);
-
+        // Secao da Tabela Ampliada de Movimentacoes
         JLabel tituloMov = new JLabel("Últimas Movimentações");
         tituloMov.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        tituloMov.setForeground(new Color(35, 18, 4));
-        tituloMov.setBounds(600, 340, 250, 25);
+        tituloMov.setForeground(COR_TEXTO_PADRAO);
+        tituloMov.setBounds(40, 345, 250, 25);
         abaFin.add(tituloMov);
 
-        JPanel containerMovimentacoes = new JPanel(null);
-        containerMovimentacoes.setBounds(600, 370, 520, 250);
+        JPanel containerMovimentacoes = new JPanel(new BorderLayout());
+        containerMovimentacoes.setBounds(40, 375, 1080, 260);
         containerMovimentacoes.setBackground(Color.WHITE);
         containerMovimentacoes.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(230, 230, 230), 1, true),
                 BorderFactory.createEmptyBorder(10, 10, 10, 10)
         ));
 
-        String[] colunasMov = {"Data", "Tipo", "Valor"};
-        tableMov = estilizarTabela(new Object[0][3], colunasMov);
+        // Tabela atualizada incluindo a coluna Descricao
+        String[] colunasMov = {"Data", "Tipo", "Descrição", "Valor"};
+        tableMov = estilizarTabela(new Object[0][4], colunasMov);
+
+        // Larguras das colunas para melhor visualizacao
+        tableMov.getColumnModel().getColumn(0).setPreferredWidth(120); // Data
+        tableMov.getColumnModel().getColumn(1).setPreferredWidth(120); // Tipo
+        tableMov.getColumnModel().getColumn(2).setPreferredWidth(600); // Descrição (maior espaço)
+        tableMov.getColumnModel().getColumn(3).setPreferredWidth(150); // Valor
 
         JScrollPane scrollMov = new JScrollPane(tableMov);
         scrollMov.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scrollMov.setBorder(null);
-        scrollMov.setBounds(10, 10, 495, 230);
         scrollMov.setBackground(Color.WHITE);
         scrollMov.getViewport().setBackground(Color.WHITE);
         scrollMov.getVerticalScrollBar().setUI(new ScrollBarProfissionalUI());
         scrollMov.getVerticalScrollBar().setPreferredSize(new Dimension(8, 0));
 
-        containerMovimentacoes.add(scrollMov);
+        containerMovimentacoes.add(scrollMov, BorderLayout.CENTER);
         abaFin.add(containerMovimentacoes);
 
         cbPeriodo.addActionListener(e -> recarregarDadosBanco());
@@ -210,7 +201,7 @@ public class PainelResumoFinanceiro extends JPanel {
             @Override
             protected void done() {
                 btnGerarRelatorio.setEnabled(true);
-                btnGerarRelatorio.setText("Gerar Relatório");
+                btnGerarRelatorio.setText("Exportar PDF");
 
                 if (sucesso) {
                     JOptionPane.showMessageDialog(PainelResumoFinanceiro.this,
@@ -255,32 +246,44 @@ public class PainelResumoFinanceiro extends JPanel {
                 try {
                     Relatorio relatorio = get();
 
-                    lblValorEntrada.setText(String.format("R$ %.2f", relatorio.getTotalEntradas()));
-                    lblValorSaida.setText(String.format("R$ %.2f", relatorio.getTotalSaidas()));
-                    lblValorSaldo.setText(String.format("R$ %.2f", relatorio.getSaldoFinal()));
+                    double totalEntradas = relatorio.getTotalEntradas();
+                    double totalSaidas = relatorio.getTotalSaidas();
+                    double saldo = relatorio.getSaldoFinal();
 
-                    DefaultTableModel modelResumo = (DefaultTableModel) tableResumo.getModel();
-                    modelResumo.setRowCount(0);
-                    modelResumo.addRow(new Object[]{" Total de entradas", String.format("R$ %.2f ", relatorio.getTotalEntradas())});
-                    modelResumo.addRow(new Object[]{" Total de saídas", String.format("R$ %.2f ", relatorio.getTotalSaidas())});
-                    modelResumo.addRow(new Object[]{" Saldo do período", String.format("R$ %.2f ", relatorio.getSaldoFinal())});
+                    lblValorEntrada.setText(String.format("R$ %.2f", totalEntradas));
+                    lblValorSaida.setText(String.format("R$ %.2f", totalSaidas));
+                    lblValorSaldo.setText(String.format("R$ %.2f", saldo));
 
+                    // Cor dinamica do Saldo
+                    if (saldo < 0) {
+                        lblValorSaldo.setForeground(COR_VERMELHO);
+                    } else if (saldo > 0) {
+                        lblValorSaldo.setForeground(COR_VERDE);
+                    } else {
+                        lblValorSaldo.setForeground(COR_TEXTO_PADRAO);
+                    }
+
+                    // Preenchimento da Tabela de Movimentacoes
                     DefaultTableModel modelMov = (DefaultTableModel) tableMov.getModel();
                     modelMov.setRowCount(0);
 
                     SimpleDateFormat formatoData = new SimpleDateFormat("dd/MM/yyyy");
                     if (listaMovimentos != null) {
                         for (Financeiro f : listaMovimentos) {
+                            String desc = (f.getDesc() != null && !f.getDesc().isBlank()) ? f.getDesc() : f.getCat();
                             modelMov.addRow(new Object[]{
-                                    " " + formatoData.format(f.getData()),
-                                    " " + f.getTipo(),
-                                    String.format("R$ %.2f ", f.getValor())
+                                    formatoData.format(f.getData()),
+                                    f.getTipo(),
+                                    desc,
+                                    String.format("R$ %.2f", f.getValor())
                             });
                         }
                     }
 
-                    tableResumo.revalidate();
-                    tableResumo.repaint();
+                    // Atualizacao do rotulo de data/hora
+                    SimpleDateFormat formatoDataHora = new SimpleDateFormat("dd/MM/yyyy 'às' HH:mm");
+                    lblUltimaAtualizacao.setText("Última atualização: " + formatoDataHora.format(new Date()));
+
                     tableMov.revalidate();
                     tableMov.repaint();
                     revalidate();
@@ -294,7 +297,7 @@ public class PainelResumoFinanceiro extends JPanel {
         worker.execute();
     }
 
-    private void criarCard(JPanel container, String texto, JLabel labelValor, Color cor, int x, int y) {
+    private JLabel criarCard(JPanel container, String texto, JLabel labelValor, Color corTitulo, int x, int y) {
         JPanel card = new JPanel();
         card.setLayout(null);
         card.setBackground(Color.WHITE);
@@ -305,17 +308,18 @@ public class PainelResumoFinanceiro extends JPanel {
         ));
 
         JLabel titulo = new JLabel(texto);
-        titulo.setForeground(cor);
+        titulo.setForeground(corTitulo);
         titulo.setFont(new Font("Segoe UI", Font.PLAIN, 16));
         titulo.setBounds(20, 15, 200, 20);
 
         labelValor.setFont(new Font("Segoe UI", Font.BOLD, 32));
-        labelValor.setForeground(Color.BLACK);
-        labelValor.setBounds(20, 50, 220, 45);
+        labelValor.setBounds(20, 50, 300, 45);
 
         card.add(titulo);
         card.add(labelValor);
         container.add(card);
+
+        return titulo;
     }
 
     private JTable estilizarTabela(Object[][] dados, String[] colunas) {
@@ -330,13 +334,29 @@ public class PainelResumoFinanceiro extends JPanel {
                 Component c = super.prepareRenderer(renderer, row, column);
                 if (!isRowSelected(row)) {
                     c.setBackground(row % 2 == 0 ? Color.WHITE : new Color(248, 245, 240));
+
+                    // Cores na coluna do Valor
+                    if (column == 3) {
+                        String tipo = String.valueOf(getValueAt(row, 1)).trim();
+                        if ("Entrada".equalsIgnoreCase(tipo)) {
+                            c.setForeground(COR_VERDE);
+                            c.setFont(c.getFont().deriveFont(Font.BOLD));
+                        } else if ("Saída".equalsIgnoreCase(tipo)) {
+                            c.setForeground(COR_VERMELHO);
+                            c.setFont(c.getFont().deriveFont(Font.BOLD));
+                        } else {
+                            c.setForeground(Color.BLACK);
+                        }
+                    } else {
+                        c.setForeground(Color.BLACK);
+                    }
                 }
                 return c;
             }
         };
 
         tabela.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        tabela.setRowHeight(45);
+        tabela.setRowHeight(40);
         tabela.setGridColor(new Color(235, 235, 235));
         tabela.getTableHeader().setBackground(new Color(205, 145, 55));
         tabela.getTableHeader().setForeground(Color.WHITE);
@@ -346,8 +366,15 @@ public class PainelResumoFinanceiro extends JPanel {
         DefaultTableCellRenderer centralizado = new DefaultTableCellRenderer();
         centralizado.setHorizontalAlignment(SwingConstants.CENTER);
 
+        DefaultTableCellRenderer alinhadoEsquerda = new DefaultTableCellRenderer();
+        alinhadoEsquerda.setHorizontalAlignment(SwingConstants.LEFT);
+
         for (int i = 0; i < tabela.getColumnCount(); i++) {
-            tabela.getColumnModel().getColumn(i).setCellRenderer(centralizado);
+            if (i == 2) { // Descrição alinhada à esquerda para facilitar leitura
+                tabela.getColumnModel().getColumn(i).setCellRenderer(alinhadoEsquerda);
+            } else {
+                tabela.getColumnModel().getColumn(i).setCellRenderer(centralizado);
+            }
         }
 
         return tabela;

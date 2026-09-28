@@ -54,9 +54,6 @@ public class FinanceiroController {
         return sucesso;
     }
 
-    /**
-     * 🛠️ RECOLOCADO: Método responsável por processar as atualizações da View no Banco
-     */
     public boolean editarMovimentacao(int idMov, String tipo, String categoria, String descricao, String valorStr) {
         if (valorStr == null || valorStr.trim().isEmpty()) {
             JOptionPane.showMessageDialog(null, "O campo 'Valor' é obrigatório para edição.", "Aviso", JOptionPane.WARNING_MESSAGE);

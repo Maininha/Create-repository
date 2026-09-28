@@ -59,7 +59,6 @@ public class RelatorioDAO {
         return relatorio;
     }
 
-    // 🛠️ MÉTODO MODIFICADO: Agora salva o relatório e vincula todas as movimentações do período automaticamente
     public boolean salvarNoBanco(Relatorio relatorio) {
         String sqlRelatorio = "INSERT INTO relatorio (periodo_inicial, periodo_final, total_entradas, total_saidas, saldo_final) VALUES (?, ?, ?, ?, ?)";
         String sqlIntermediaria = "INSERT INTO relatorio_movimentacoes (id_relatorio, id_mov) VALUES (?, ?)";
@@ -73,7 +72,6 @@ public class RelatorioDAO {
             conn = Conexao.getConnection();
             conn.setAutoCommit(false); // Desativa commit automático para segurança da transação (Tudo ou Nada)
 
-            // 1. Salva na tabela pai 'relatorio' capturando o ID gerado por autoincremento
             stmtRelatorio = conn.prepareStatement(sqlRelatorio, Statement.RETURN_GENERATED_KEYS);
             stmtRelatorio.setTimestamp(1, new Timestamp(relatorio.getPeriodoInicial().getTime()));
             stmtRelatorio.setTimestamp(2, new Timestamp(relatorio.getPeriodoFinal().getTime()));
@@ -86,30 +84,30 @@ public class RelatorioDAO {
                 throw new SQLException("Falha ao inserir o registro de relatório.");
             }
 
-            // Recupera o ID gerado da tabela relatorio
+
             int idRelatorioGerado = -1;
             rsKeys = stmtRelatorio.getGeneratedKeys();
             if (rsKeys.next()) {
                 idRelatorioGerado = rsKeys.getInt(1);
             }
 
-            // 2. Busca dinamicamente os IDs das movimentações que pertencem a este intervalo de datas
+
             if (idRelatorioGerado != -1) {
                 List<Integer> idsMovimentacoes = buscarIdsMovimentacoesNoPeriodo(conn, relatorio.getPeriodoInicial(), relatorio.getPeriodoFinal());
 
-                // 3. Alimenta a tabela relatorio_movimentacoes usando processamento em lote (Batch)
+
                 if (!idsMovimentacoes.isEmpty()) {
                     stmtIntermediaria = conn.prepareStatement(sqlIntermediaria);
                     for (int idMov : idsMovimentacoes) {
                         stmtIntermediaria.setInt(1, idRelatorioGerado);
                         stmtIntermediaria.setInt(2, idMov);
-                        stmtIntermediaria.addBatch(); // Empilha para execução em lote
+                        stmtIntermediaria.addBatch();
                     }
-                    stmtIntermediaria.executeBatch(); // Executa todas as inserções de uma única vez
+                    stmtIntermediaria.executeBatch();
                 }
             }
 
-            conn.commit(); // Grava de forma definitiva em ambas as tabelas
+            conn.commit();
             return true;
 
         } catch (SQLException e) {
@@ -124,7 +122,7 @@ public class RelatorioDAO {
             }
             return false;
         } finally {
-            // Garante o fechamento limpo de todos os recursos abertos manualmente
+
             try { if (rsKeys != null) rsKeys.close(); } catch (Exception e) {}
             try { if (stmtRelatorio != null) stmtRelatorio.close(); } catch (Exception e) {}
             try { if (stmtIntermediaria != null) stmtIntermediaria.close(); } catch (Exception e) {}
@@ -132,7 +130,7 @@ public class RelatorioDAO {
         }
     }
 
-    // 🛠️ MÉTODO AUXILIAR PRIVADO: Varre a tabela 'financeiro' trazendo os IDs que se encaixam no filtro
+
     private List<Integer> buscarIdsMovimentacoesNoPeriodo(Connection conn, java.util.Date inicio, java.util.Date fim) throws SQLException {
         List<Integer> ids = new ArrayList<>();
         String sqlBusca = "SELECT id_mov FROM financeiro WHERE data_mov >= ? AND data_mov <= ?";

@@ -2,19 +2,22 @@ package view;
 
 import javax.swing.*;
 import javax.swing.border.LineBorder;
+import javax.swing.text.MaskFormatter;
 import java.awt.*;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.text.ParseException;
 
 public class PainelCadastroAssociado extends JPanel {
 
     private TelaPrincipal telaPrincipal;
 
     private JTextField txtNome;
-    private JTextField txtCpf;
+    private JFormattedTextField txtCpf;
     private JTextField txtLogradouro;
     private JTextField txtCidade;
-    private JTextField txtEstado;
+    private JComboBox<String> cbEstado;
     private JTextField txtReferencia;
     private JRadioButton rbGestor;
     private JRadioButton rbAssociado;
@@ -25,115 +28,141 @@ public class PainelCadastroAssociado extends JPanel {
     public PainelCadastroAssociado(TelaPrincipal telaPrincipal) {
         this.telaPrincipal = telaPrincipal;
 
-        setLayout(null);
+        setLayout(new GridBagLayout());
         setBackground(new Color(248, 245, 240));
 
-        JPanel boxFormulario = new JPanel();
-        boxFormulario.setLayout(null);
+        // Box Central (Card do Formulário)
+        JPanel boxFormulario = new JPanel(new GridBagLayout());
         boxFormulario.setBackground(Color.WHITE);
-        boxFormulario.setBounds(180, 40, 760, 480);
-        boxFormulario.setBorder(new LineBorder(new Color(230, 225, 215), 1, true));
+        boxFormulario.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(230, 225, 215), 1, true),
+                BorderFactory.createEmptyBorder(25, 30, 25, 30)
+        ));
 
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(6, 10, 6, 10);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        // Título
         JLabel lbTitulo = new JLabel("Cadastrar Associado");
         lbTitulo.setFont(new Font("Segoe UI", Font.BOLD, 22));
         lbTitulo.setForeground(new Color(35, 18, 4));
-        lbTitulo.setBounds(40, 25, 400, 30);
-        boxFormulario.add(lbTitulo);
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 2;
+        gbc.insets = new Insets(0, 10, 20, 10);
+        boxFormulario.add(lbTitulo, gbc);
+
+        gbc.insets = new Insets(4, 10, 4, 10);
+        gbc.gridwidth = 1;
 
         // ================= COLUNA 1: DADOS PESSOAIS =================
-        JLabel lbNome = new JLabel("Nome:");
-        lbNome.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        lbNome.setForeground(Color.GRAY);
-        lbNome.setBounds(40, 80, 320, 20);
-        boxFormulario.add(lbNome);
+        // Nome
+        gbc.gridx = 0; gbc.gridy = 1;
+        boxFormulario.add(criarRotulo("Nome *"), gbc);
 
         txtNome = new JTextField();
         estilizarCampo(txtNome);
-        txtNome.setBounds(40, 105, 320, 35);
-        boxFormulario.add(txtNome);
+        gbc.gridy = 2;
+        boxFormulario.add(txtNome, gbc);
 
-        JLabel lbCpf = new JLabel("CPF:");
-        lbCpf.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        lbCpf.setForeground(Color.GRAY);
-        lbCpf.setBounds(40, 155, 320, 20);
-        boxFormulario.add(lbCpf);
+        // CPF com Máscara Estável
+        gbc.gridy = 3;
+        boxFormulario.add(criarRotulo("CPF *"), gbc);
 
-        txtCpf = new JTextField();
+        try {
+            MaskFormatter mascaraCpf = new MaskFormatter("###.###.###-##");
+            mascaraCpf.setPlaceholderCharacter('_');
+            txtCpf = new JFormattedTextField(mascaraCpf);
+            txtCpf.setFocusLostBehavior(JFormattedTextField.PERSIST);
+        } catch (ParseException e) {
+            txtCpf = new JFormattedTextField();
+        }
         estilizarCampo(txtCpf);
-        txtCpf.setBounds(40, 180, 320, 35);
-        boxFormulario.add(txtCpf);
+        gbc.gridy = 4;
+        boxFormulario.add(txtCpf, gbc);
 
-        JLabel lbTipo = new JLabel("Tipo de Perfil:");
-        lbTipo.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        lbTipo.setForeground(Color.GRAY);
-        lbTipo.setBounds(40, 235, 320, 20);
-        boxFormulario.add(lbTipo);
+        // Tipo de Perfil
+        gbc.gridy = 5;
+        boxFormulario.add(criarRotulo("Tipo de Perfil"), gbc);
+
+        JPanel painelRadio = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 0));
+        painelRadio.setOpaque(false);
 
         rbGestor = new JRadioButton("Gestor");
         rbGestor.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         rbGestor.setOpaque(false);
         rbGestor.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        rbGestor.setBounds(40, 260, 100, 30);
 
         rbAssociado = new JRadioButton("Associado", true);
         rbAssociado.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         rbAssociado.setOpaque(false);
         rbAssociado.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        rbAssociado.setBounds(150, 260, 120, 30);
 
         grupoTipo = new ButtonGroup();
         grupoTipo.add(rbGestor);
         grupoTipo.add(rbAssociado);
 
-        boxFormulario.add(rbGestor);
-        boxFormulario.add(rbAssociado);
+        painelRadio.add(rbGestor);
+        painelRadio.add(rbAssociado);
+
+        gbc.gridy = 6;
+        boxFormulario.add(painelRadio, gbc);
 
         // ================= COLUNA 2: ENDEREÇO =================
-        JLabel lbLogradouro = new JLabel("Logradouro");
-        lbLogradouro.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        lbLogradouro.setForeground(Color.GRAY);
-        lbLogradouro.setBounds(400, 80, 320, 20);
-        boxFormulario.add(lbLogradouro);
+        // Logradouro
+        gbc.gridx = 1; gbc.gridy = 1;
+        boxFormulario.add(criarRotulo("Logradouro"), gbc);
 
         txtLogradouro = new JTextField();
         estilizarCampo(txtLogradouro);
-        txtLogradouro.setBounds(400, 105, 320, 35);
-        boxFormulario.add(txtLogradouro);
+        gbc.gridy = 2;
+        boxFormulario.add(txtLogradouro, gbc);
 
-        JLabel lbCidade = new JLabel("Cidade:");
-        lbCidade.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        lbCidade.setForeground(Color.GRAY);
-        lbCidade.setBounds(400, 155, 200, 20);
-        boxFormulario.add(lbCidade);
+        // Cidade e Estado (Sub-painel)
+        JPanel painelCidadeEstado = new JPanel(new GridBagLayout());
+        painelCidadeEstado.setOpaque(false);
+        GridBagConstraints gbcCE = new GridBagConstraints();
+        gbcCE.fill = GridBagConstraints.HORIZONTAL;
+
+        gbcCE.gridx = 0; gbcCE.gridy = 0; gbcCE.weightx = 0.75; gbcCE.insets = new Insets(0, 0, 2, 5);
+        painelCidadeEstado.add(criarRotulo("Cidade"), gbcCE);
+
+        gbcCE.gridx = 1; gbcCE.weightx = 0.25; gbcCE.insets = new Insets(0, 5, 2, 0);
+        painelCidadeEstado.add(criarRotulo("UF"), gbcCE);
 
         txtCidade = new JTextField();
         estilizarCampo(txtCidade);
-        txtCidade.setBounds(400, 180, 200, 35);
-        boxFormulario.add(txtCidade);
+        gbcCE.gridx = 0; gbcCE.gridy = 1; gbcCE.weightx = 0.75; gbcCE.insets = new Insets(0, 0, 0, 5);
+        painelCidadeEstado.add(txtCidade, gbcCE);
 
-        JLabel lbEstado = new JLabel("Estado (UF):");
-        lbEstado.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        lbEstado.setForeground(Color.GRAY);
-        lbEstado.setBounds(620, 155, 100, 20);
-        boxFormulario.add(lbEstado);
+        // JComboBox para UF
+        String[] ufs = {"", "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"};
+        cbEstado = new JComboBox<>(ufs);
+        cbEstado.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        cbEstado.setPreferredSize(new Dimension(80, 35));
+        cbEstado.setBackground(Color.WHITE);
+        cbEstado.setBorder(new LineBorder(new Color(210, 210, 210)));
 
-        txtEstado = new JTextField();
-        estilizarCampo(txtEstado);
-        txtEstado.setBounds(620, 180, 100, 35);
-        boxFormulario.add(txtEstado);
+        gbcCE.gridx = 1; gbcCE.weightx = 0.25; gbcCE.insets = new Insets(0, 5, 0, 0);
+        painelCidadeEstado.add(cbEstado, gbcCE);
 
-        JLabel lbReferencia = new JLabel("Referência:");
-        lbReferencia.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        lbReferencia.setForeground(Color.GRAY);
-        lbReferencia.setBounds(400, 230, 320, 20);
-        boxFormulario.add(lbReferencia);
+        gbc.gridx = 1; gbc.gridy = 3;
+        gbc.gridheight = 2;
+        boxFormulario.add(painelCidadeEstado, gbc);
+
+        // Referência
+        gbc.gridx = 1; gbc.gridy = 5;
+        gbc.gridheight = 1;
+        boxFormulario.add(criarRotulo("Referência"), gbc);
 
         txtReferencia = new JTextField();
         estilizarCampo(txtReferencia);
-        txtReferencia.setBounds(400, 255, 320, 35);
-        boxFormulario.add(txtReferencia);
+        gbc.gridy = 6;
+        boxFormulario.add(txtReferencia, gbc);
 
-        // ================= BOTÃO DE SUBMISSÃO =================
+        // ================= AÇÕES E BOTÕES =================
+        // Botão Cadastrar
         btnCadastrar = new JButton("Cadastrar");
         btnCadastrar.setFont(new Font("Segoe UI", Font.BOLD, 15));
         btnCadastrar.setForeground(Color.WHITE);
@@ -141,7 +170,7 @@ public class PainelCadastroAssociado extends JPanel {
         btnCadastrar.setBorderPainted(false);
         btnCadastrar.setFocusPainted(false);
         btnCadastrar.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnCadastrar.setBounds(40, 350, 680, 45);
+        btnCadastrar.setPreferredSize(new Dimension(0, 45));
 
         btnCadastrar.addMouseListener(new MouseAdapter() {
             @Override
@@ -153,9 +182,13 @@ public class PainelCadastroAssociado extends JPanel {
                 btnCadastrar.setBackground(new Color(185, 120, 30));
             }
         });
-        boxFormulario.add(btnCadastrar);
 
-        // ================= BOTÃO VOLTAR (EMBAIXO) =================
+        gbc.gridx = 0; gbc.gridy = 7;
+        gbc.gridwidth = 2;
+        gbc.insets = new Insets(25, 10, 5, 10);
+        boxFormulario.add(btnCadastrar, gbc);
+
+        // Botão Voltar Link
         btnVoltarLink = new JButton("← Cancelar e voltar para a listagem");
         btnVoltarLink.setFont(new Font("Segoe UI", Font.BOLD, 14));
         btnVoltarLink.setForeground(new Color(185, 120, 30));
@@ -164,7 +197,6 @@ public class PainelCadastroAssociado extends JPanel {
         btnVoltarLink.setFocusPainted(false);
         btnVoltarLink.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnVoltarLink.setHorizontalAlignment(SwingConstants.CENTER);
-        btnVoltarLink.setBounds(40, 410, 680, 30);
 
         btnVoltarLink.addMouseListener(new MouseAdapter() {
             @Override
@@ -176,18 +208,46 @@ public class PainelCadastroAssociado extends JPanel {
                 btnVoltarLink.setForeground(new Color(185, 120, 30));
             }
         });
-        boxFormulario.add(btnVoltarLink);
+
+        gbc.gridy = 8;
+        gbc.insets = new Insets(0, 10, 0, 10);
+        boxFormulario.add(btnVoltarLink, gbc);
+
+        // Atalho Tecla Enter nos campos para Submissão
+        ActionListener acaoEnter = e -> btnCadastrar.doClick();
+        txtNome.addActionListener(acaoEnter);
+        txtCpf.addActionListener(acaoEnter);
+        txtLogradouro.addActionListener(acaoEnter);
+        txtCidade.addActionListener(acaoEnter);
+        txtReferencia.addActionListener(acaoEnter);
 
         add(boxFormulario);
     }
 
-    // 🛠️ CORREÇÃO AQUI: Alterado de 'voidGrid' para 'void'
+    private JLabel criarRotulo(String texto) {
+        JLabel lb = new JLabel(texto);
+        lb.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lb.setForeground(new Color(70, 70, 70));
+        return lb;
+    }
+
     private void estilizarCampo(JTextField campo) {
         campo.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        campo.setPreferredSize(new Dimension(320, 35));
         campo.setBorder(BorderFactory.createCompoundBorder(
                 new LineBorder(new Color(210, 210, 210)),
-                BorderFactory.createEmptyBorder(0, 10, 0, 0)
+                BorderFactory.createEmptyBorder(0, 10, 0, 10)
         ));
+    }
+
+    public void limparCampos() {
+        txtNome.setText("");
+        txtCpf.setValue(null);
+        txtLogradouro.setText("");
+        txtCidade.setText("");
+        if (cbEstado.getItemCount() > 0) cbEstado.setSelectedIndex(0);
+        txtReferencia.setText("");
+        rbAssociado.setSelected(true);
     }
 
     public boolean isGestorSelecionado() {
@@ -196,10 +256,10 @@ public class PainelCadastroAssociado extends JPanel {
 
     public TelaPrincipal getTelaPrincipal() { return telaPrincipal; }
     public JTextField getTxtNome() { return txtNome; }
-    public JTextField getTxtCpf() { return txtCpf; }
+    public JFormattedTextField getTxtCpf() { return txtCpf; }
     public JTextField getTxtLogradouro() { return txtLogradouro; }
     public JTextField getTxtCidade() { return txtCidade; }
-    public JTextField getTxtEstado() { return txtEstado; }
+    public JComboBox<String> getCbEstado() { return cbEstado; }
     public JTextField getTxtReferencia() { return txtReferencia; }
     public JRadioButton getRbGestor() { return rbGestor; }
     public JRadioButton getRbAssociado() { return rbAssociado; }

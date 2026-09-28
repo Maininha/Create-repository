@@ -2,32 +2,36 @@ package view;
 
 import javax.swing.*;
 import javax.swing.border.Border;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.net.URL;
 
 public class PainelAssociados extends JPanel {
 
     private JTable tabela;
     private JTextField pesquisa;
     private JButton buscar;
+    private JButton btnLimparBusca;
     private JButton btnVoltarLink;
+    private JLabel lbEmptyState;
 
     private DefaultTableModel modelo;
     private TableRowSorter<DefaultTableModel> sorter;
 
-    private final String PLACEHOLDER = "Buscar por Nome ou CPF";
+    private final String PLACEHOLDER = "Buscar por Nome ou CPF...";
     private final Border BORDA_CLEAN = BorderFactory.createLineBorder(new Color(230, 225, 218), 1, true);
 
-    // Cores Premium do Sistema unificadas
     private final Color COR_PRIMARIA = new Color(43, 22, 7);
     private final Color COR_DESTAQUE = new Color(185, 120, 30);
     private final Color COR_HOVER = new Color(205, 145, 55);
+    private final Color COR_EXCLUIR = new Color(211, 47, 47);
 
-    // ================= MVC LISTENER =================
     public interface AcoesListener {
         void editar(int rowModel);
         void excluir(int rowModel);
@@ -39,25 +43,15 @@ public class PainelAssociados extends JPanel {
         this.listener = listener;
     }
 
-    public JTable getTabela() {
-        return tabela;
-    }
+    public JTable getTabela() { return tabela; }
+    public JButton getBtnBuscar() { return buscar; }
+    public JTextField getTxtBusca() { return pesquisa; }
 
-    public JButton getBtnBuscar() {
-        return buscar;
-    }
-
-    public JTextField getTxtBusca() {
-        return pesquisa;
-    }
-
-    // ================= CONSTRUTOR =================
     public PainelAssociados() {
         setLayout(new BorderLayout(0, 20));
         setBackground(Color.WHITE);
         setBorder(BorderFactory.createEmptyBorder(25, 30, 25, 30));
 
-        // Construção das seções estruturadas (Fluidez em resoluções altas)
         criarCabecalhoEPesquisa();
         criarPainelTabela();
     }
@@ -67,7 +61,6 @@ public class PainelAssociados extends JPanel {
         painelSuperior.setLayout(new BoxLayout(painelSuperior, BoxLayout.Y_AXIS));
         painelSuperior.setOpaque(false);
 
-        // Título da Seção
         JLabel titulo = new JLabel("Gestão de Associados");
         titulo.setFont(new Font("Segoe UI", Font.BOLD, 26));
         titulo.setForeground(COR_PRIMARIA);
@@ -75,18 +68,60 @@ public class PainelAssociados extends JPanel {
         painelSuperior.add(titulo);
         painelSuperior.add(Box.createVerticalStrut(15));
 
-        // Linha de Comandos (Pesquisa + Botões de Ação)
         JPanel linhaComandos = new JPanel(new BorderLayout(15, 0));
         linhaComandos.setOpaque(false);
         linhaComandos.setAlignmentX(Component.LEFT_ALIGNMENT);
 
+        JPanel painelInput = new JPanel(new BorderLayout());
+        painelInput.setBackground(Color.WHITE);
+        painelInput.setBorder(BorderFactory.createCompoundBorder(
+                BORDA_CLEAN,
+                BorderFactory.createEmptyBorder(0, 12, 0, 5)
+        ));
+
         pesquisa = new JTextField(PLACEHOLDER);
         pesquisa.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         pesquisa.setForeground(Color.GRAY);
-        pesquisa.setBorder(BorderFactory.createCompoundBorder(
-                BORDA_CLEAN,
-                BorderFactory.createEmptyBorder(0, 12, 0, 12)
-        ));
+        pesquisa.setBorder(null);
+
+        // Botão de limpar pesquisa
+        btnLimparBusca = new JButton();
+        URL imgUrl = getClass().getResource("/imagens/fechar.png");
+
+        if (imgUrl != null) {
+            ImageIcon iconeOriginal = new ImageIcon(imgUrl);
+            Image imgRedimensionada = iconeOriginal.getImage().getScaledInstance(14, 14, Image.SCALE_SMOOTH);
+            btnLimparBusca.setIcon(new ImageIcon(imgRedimensionada));
+        } else {
+            btnLimparBusca.setText("✕");
+            btnLimparBusca.setFont(new Font("Segoe UI", Font.BOLD, 12));
+            btnLimparBusca.setForeground(Color.GRAY);
+        }
+
+        btnLimparBusca.setContentAreaFilled(false);
+        btnLimparBusca.setBorderPainted(false);
+        btnLimparBusca.setFocusPainted(false);
+        btnLimparBusca.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnLimparBusca.setPreferredSize(new Dimension(24, 24));
+        btnLimparBusca.setVisible(false);
+        btnLimparBusca.addActionListener(e -> limparFiltroCompleto());
+
+        pesquisa.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) { atualizarVisibilidade(); }
+            @Override
+            public void removeUpdate(DocumentEvent e) { atualizarVisibilidade(); }
+            @Override
+            public void changedUpdate(DocumentEvent e) { atualizarVisibilidade(); }
+
+            private void atualizarVisibilidade() {
+                SwingUtilities.invokeLater(() -> {
+                    String txt = pesquisa.getText().trim();
+                    boolean temTextoValido = !txt.isEmpty() && !txt.equals(PLACEHOLDER);
+                    btnLimparBusca.setVisible(temTextoValido);
+                });
+            }
+        });
 
         pesquisa.addFocusListener(new FocusAdapter() {
             @Override
@@ -102,23 +137,28 @@ public class PainelAssociados extends JPanel {
                 if (pesquisa.getText().trim().isEmpty()) {
                     pesquisa.setText(PLACEHOLDER);
                     pesquisa.setForeground(Color.GRAY);
+                    btnLimparBusca.setVisible(false);
                 }
             }
         });
-        linhaComandos.add(pesquisa, BorderLayout.CENTER);
 
-        // Agrupamento dos botões à direita
+        painelInput.add(pesquisa, BorderLayout.CENTER);
+        painelInput.add(btnLimparBusca, BorderLayout.EAST);
+        linhaComandos.add(painelInput, BorderLayout.CENTER);
+
         JPanel painelBotoes = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         painelBotoes.setOpaque(false);
 
+        // Botão Buscar (Estilo Secundário/Outline)
         buscar = new JButton("Buscar");
-        estilizarBotaoAcao(buscar);
+        estilizarBotaoSecundario(buscar);
         buscar.addActionListener(e -> filtrar());
         pesquisa.addActionListener(e -> filtrar());
         painelBotoes.add(buscar);
 
+        // Botão Cadastrar (Estilo Primário Chamativo)
         JButton btnNovoAssociado = new JButton("Cadastrar");
-        estilizarBotaoAcao(btnNovoAssociado);
+        estilizarBotaoPrimario(btnNovoAssociado);
         btnNovoAssociado.addActionListener(e -> {
             Window window = SwingUtilities.getWindowAncestor(PainelAssociados.this);
             if (window instanceof TelaPrincipal) {
@@ -137,7 +177,6 @@ public class PainelAssociados extends JPanel {
         painelSuperior.add(linhaComandos);
         painelSuperior.add(Box.createVerticalStrut(8));
 
-        // Link para limpar filtros e retornar à listagem padrão
         btnVoltarLink = new JButton("← Voltar para todos os associados");
         btnVoltarLink.setFont(new Font("Segoe UI", Font.BOLD, 13));
         btnVoltarLink.setForeground(COR_DESTAQUE);
@@ -151,13 +190,9 @@ public class PainelAssociados extends JPanel {
 
         btnVoltarLink.addMouseListener(new MouseAdapter() {
             @Override
-            public void mouseEntered(MouseEvent e) {
-                btnVoltarLink.setForeground(COR_PRIMARIA);
-            }
+            public void mouseEntered(MouseEvent e) { btnVoltarLink.setForeground(COR_PRIMARIA); }
             @Override
-            public void mouseExited(MouseEvent e) {
-                btnVoltarLink.setForeground(COR_DESTAQUE);
-            }
+            public void mouseExited(MouseEvent e) { btnVoltarLink.setForeground(COR_DESTAQUE); }
         });
 
         btnVoltarLink.addActionListener(e -> limparFiltroCompleto());
@@ -167,7 +202,7 @@ public class PainelAssociados extends JPanel {
     }
 
     private void criarPainelTabela() {
-        JPanel cardContainer = new JPanel(new BorderLayout());
+        JPanel cardContainer = new JPanel(new CardLayout());
         cardContainer.setBackground(Color.WHITE);
         cardContainer.setBorder(BorderFactory.createCompoundBorder(
                 BORDA_CLEAN,
@@ -201,7 +236,6 @@ public class PainelAssociados extends JPanel {
         tabela.setShowGrid(false);
         tabela.setIntercellSpacing(new Dimension(0, 0));
 
-        // Customização do Cabeçalho
         JTableHeader header = tabela.getTableHeader();
         header.setBackground(COR_PRIMARIA);
         header.setForeground(Color.WHITE);
@@ -212,13 +246,24 @@ public class PainelAssociados extends JPanel {
         sorter = new TableRowSorter<>(modelo);
         tabela.setRowSorter(sorter);
 
+        DefaultTableCellRenderer leftRenderer = new DefaultTableCellRenderer();
+        leftRenderer.setHorizontalAlignment(SwingConstants.LEFT);
+        leftRenderer.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 0));
+
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
-        for (int i = 0; i < 4; i++) {
-            tabela.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
-        }
 
+        tabela.getColumnModel().getColumn(0).setCellRenderer(leftRenderer);
+        tabela.getColumnModel().getColumn(1).setCellRenderer(centerRenderer);
+        tabela.getColumnModel().getColumn(2).setCellRenderer(leftRenderer);
+        tabela.getColumnModel().getColumn(3).setCellRenderer(centerRenderer);
         tabela.getColumnModel().getColumn(4).setCellRenderer(new AcoesRenderer());
+
+        tabela.getColumnModel().getColumn(0).setPreferredWidth(180);
+        tabela.getColumnModel().getColumn(1).setPreferredWidth(130);
+        tabela.getColumnModel().getColumn(2).setPreferredWidth(220);
+        tabela.getColumnModel().getColumn(3).setPreferredWidth(120);
+        tabela.getColumnModel().getColumn(4).setPreferredWidth(150);
 
         tabela.addMouseListener(new MouseAdapter() {
             @Override
@@ -234,27 +279,49 @@ public class PainelAssociados extends JPanel {
                     if (cliqueX < larguraCelula / 2) {
                         if (listener != null) listener.editar(modelRow);
                     } else {
-                        if (listener != null) listener.excluir(modelRow);
+                        if (listener != null) {
+                            String nome = (String) modelo.getValueAt(modelRow, 0);
+
+                            // Opções personalizadas para o diálogo em Português
+                            Object[] opcoes = {"Sim", "Não"};
+
+                            int opt = JOptionPane.showOptionDialog(
+                                    PainelAssociados.this,
+                                    "Deseja realmente excluir o associado " + (nome != null ? "\"" + nome + "\"" : "") + "?",
+                                    "Confirmar Exclusão",
+                                    JOptionPane.YES_NO_OPTION,
+                                    JOptionPane.WARNING_MESSAGE,
+                                    null,
+                                    opcoes,
+                                    opcoes[1] // Mantém o "Não" focado por padrão
+                            );
+
+                            if (opt == 0) { // 0 corresponde a "Sim"
+                                listener.excluir(modelRow);
+                                atualizarEmptyState();
+                            }
+                        }
                     }
                 }
             }
         });
 
-        // Configuração do ScrollPane com barras finas e fluidas premium
         JScrollPane scroll = new JScrollPane(tabela);
         scroll.setBorder(null);
         scroll.getViewport().setBackground(Color.WHITE);
-        scroll.getVerticalScrollBar().setUI(new ScrollBarCustomUI());
-        scroll.getHorizontalScrollBar().setUI(new ScrollBarCustomUI());
         scroll.getVerticalScrollBar().setUnitIncrement(16);
-        scroll.getVerticalScrollBar().setPreferredSize(new Dimension(8, 0));
-        scroll.getHorizontalScrollBar().setPreferredSize(new Dimension(0, 8));
 
-        cardContainer.add(scroll, BorderLayout.CENTER);
+        lbEmptyState = new JLabel("Nenhum associado cadastrado.", SwingConstants.CENTER);
+        lbEmptyState.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+        lbEmptyState.setForeground(Color.GRAY);
+
+        cardContainer.add(scroll, "tabela");
+        cardContainer.add(lbEmptyState, "empty");
+
         add(cardContainer, BorderLayout.CENTER);
     }
 
-    private void estilizarBotaoAcao(JButton btn) {
+    private void estilizarBotaoPrimario(JButton btn) {
         btn.setPreferredSize(new Dimension(130, 40));
         btn.setBackground(COR_DESTAQUE);
         btn.setForeground(Color.WHITE);
@@ -265,12 +332,29 @@ public class PainelAssociados extends JPanel {
 
         btn.addMouseListener(new MouseAdapter() {
             @Override
+            public void mouseEntered(MouseEvent e) { btn.setBackground(COR_HOVER); }
+            @Override
+            public void mouseExited(MouseEvent e) { btn.setBackground(COR_DESTAQUE); }
+        });
+    }
+
+    private void estilizarBotaoSecundario(JButton btn) {
+        btn.setPreferredSize(new Dimension(110, 40));
+        btn.setBackground(Color.WHITE);
+        btn.setForeground(COR_DESTAQUE);
+        btn.setFocusPainted(false);
+        btn.setBorder(BorderFactory.createLineBorder(COR_DESTAQUE, 1));
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        btn.addMouseListener(new MouseAdapter() {
+            @Override
             public void mouseEntered(MouseEvent e) {
-                btn.setBackground(COR_HOVER);
+                btn.setBackground(new Color(250, 245, 238));
             }
             @Override
             public void mouseExited(MouseEvent e) {
-                btn.setBackground(COR_DESTAQUE);
+                btn.setBackground(Color.WHITE);
             }
         });
     }
@@ -282,8 +366,8 @@ public class PainelAssociados extends JPanel {
         } else {
             sorter.setRowFilter(RowFilter.regexFilter("(?i)" + txt, 0, 1));
             btnVoltarLink.setVisible(true);
-            revalidate();
-            repaint();
+            btnLimparBusca.setVisible(true);
+            atualizarEmptyState();
         }
     }
 
@@ -292,12 +376,26 @@ public class PainelAssociados extends JPanel {
         pesquisa.setText(PLACEHOLDER);
         pesquisa.setForeground(Color.GRAY);
         btnVoltarLink.setVisible(false);
-        revalidate();
-        repaint();
+        btnLimparBusca.setVisible(false);
+        atualizarEmptyState();
+    }
+
+    private void atualizarEmptyState() {
+        CardLayout cl = (CardLayout) lbEmptyState.getParent().getLayout();
+        if (tabela.getRowCount() == 0) {
+            lbEmptyState.setText("Nenhum associado cadastrado.");
+            cl.show(lbEmptyState.getParent(), "empty");
+        } else if (sorter.getRowFilter() != null && tabela.getRowCount() == 0) {
+            lbEmptyState.setText("Nenhum resultado encontrado para o termo pesquisado.");
+            cl.show(lbEmptyState.getParent(), "empty");
+        } else {
+            cl.show(lbEmptyState.getParent(), "tabela");
+        }
     }
 
     public void limparTabela() {
         modelo.setRowCount(0);
+        atualizarEmptyState();
     }
 
     public void adicionarLinha(Object[] tableRowData) {
@@ -305,24 +403,37 @@ public class PainelAssociados extends JPanel {
         for (int i = 0; i < tableRowData.length && i < 4; i++) {
             nova[i] = tableRowData[i];
         }
+
+        // Formatação visual do CPF na tabela se vier numérico de 11 dígitos
+        if (nova[1] != null) {
+            String cpfStr = nova[1].toString().replaceAll("[^0-9]", "");
+            if (cpfStr.length() == 11) {
+                nova[1] = String.format("%s.%s.%s-%s",
+                        cpfStr.substring(0, 3),
+                        cpfStr.substring(3, 6),
+                        cpfStr.substring(6, 9),
+                        cpfStr.substring(9, 11));
+            }
+        }
+
         nova[4] = "";
         modelo.addRow(nova);
+        atualizarEmptyState();
     }
 
-    // ================= COMPONENTS DE RENDERIZAÇÃO DE CELL =================
     private class PainelAcoes extends JPanel {
         JButton editar = new JButton("Editar");
         JButton excluir = new JButton("Excluir");
         JLabel divisor = new JLabel("|");
 
         public PainelAcoes() {
-            setLayout(new FlowLayout(FlowLayout.CENTER, 6, 8));
+            setLayout(new FlowLayout(FlowLayout.CENTER, 8, 8));
             setOpaque(true);
 
             configurar(editar, COR_DESTAQUE);
             divisor.setForeground(new Color(210, 205, 195));
             divisor.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-            configurar(excluir, COR_PRIMARIA);
+            configurar(excluir, COR_EXCLUIR);
 
             add(editar);
             add(divisor);

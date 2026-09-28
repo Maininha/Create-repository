@@ -52,7 +52,6 @@ public class RelatorioController {
             @Override
             protected Void doInBackground() {
                 try {
-                    // Invoca o gerador customizado baseado na paleta visual corporativa
                     GeradorPdfRelatorio.gerarRelatorioAtividades(listaAtividades);
                 } catch (Exception e) {
                     sucesso = false;

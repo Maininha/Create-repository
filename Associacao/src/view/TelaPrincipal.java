@@ -266,15 +266,20 @@ public class TelaPrincipal extends JFrame {
         }
 
         btSair.addActionListener(e -> {
-            int resposta = JOptionPane.showConfirmDialog(
+            Object[] opcoes = {"Sim", "Não"};
+
+            int resposta = JOptionPane.showOptionDialog(
                     this,
                     "Deseja realmente sair?",
                     "Confirmação",
                     JOptionPane.YES_NO_OPTION,
-                    JOptionPane.QUESTION_MESSAGE
+                    JOptionPane.QUESTION_MESSAGE,
+                    null,
+                    opcoes,
+                    opcoes[1]
             );
 
-            if (resposta == JOptionPane.YES_OPTION) {
+            if (resposta == 0) {
                 for (java.awt.event.WindowListener wl : this.getWindowListeners()) {
                     this.removeWindowListener(wl);
                 }

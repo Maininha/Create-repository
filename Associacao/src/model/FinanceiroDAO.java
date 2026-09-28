@@ -11,7 +11,6 @@ import java.util.List;
 
 public class FinanceiroDAO {
 
-
     public boolean salvar(Financeiro financeiro) {
         String sql = "INSERT INTO financeiro (data_mov, valor, descricao, categoria, tipo, cpf_associado) VALUES (?, ?, ?, ?, ?, ?)";
 
@@ -23,7 +22,19 @@ public class FinanceiroDAO {
             stmt.setString(3, financeiro.getDesc());
             stmt.setString(4, financeiro.getCat());
             stmt.setString(5, financeiro.getTipo());
-            stmt.setString(6, financeiro.getCpfAssociado());
+
+            // 1. Limpa o CPF mantendo apenas dígitos numéricos
+            String cpfLimpo = null;
+            if (financeiro.getCpfAssociado() != null && !financeiro.getCpfAssociado().trim().isEmpty()) {
+                cpfLimpo = financeiro.getCpfAssociado().replaceAll("[^0-9]", "");
+            }
+
+            // 2. Valida se o CPF limpo existe na tabela associados antes de atribuir à Foreign Key
+            if (cpfLimpo != null && !cpfLimpo.isEmpty() && existeAssociado(conn, cpfLimpo)) {
+                stmt.setString(6, cpfLimpo);
+            } else {
+                stmt.setNull(6, java.sql.Types.VARCHAR);
+            }
 
             return stmt.executeUpdate() > 0;
 
@@ -33,9 +44,20 @@ public class FinanceiroDAO {
         }
     }
 
-    /**
-     * R - READ (Ler / Listar Geral por Texto) - Atende PainelInicio e PainelFinanceiro
-     */
+    // Método auxiliar para verificar se o CPF existe na tabela 'associados'
+    private boolean existeAssociado(Connection conn, String cpf) {
+        String sql = "SELECT 1 FROM associados WHERE REPLACE(REPLACE(cpf, '.', ''), '-', '') = ? LIMIT 1";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, cpf);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            System.err.println("⚠️ Aviso ao verificar existência de associado: " + e.getMessage());
+            return false;
+        }
+    }
+
     public List<Financeiro> listar(String tipo, String dataInicio, String dataFim) {
         List<Financeiro> lista = new ArrayList<>();
         StringBuilder sql = new StringBuilder("SELECT id_mov, data_mov, valor, descricao, categoria, tipo, cpf_associado FROM financeiro WHERE 1=1 ");
@@ -82,9 +104,6 @@ public class FinanceiroDAO {
         return lista;
     }
 
-    /**
-     * R - READ (Ler / Listar por Objetos Date) - Atende PainelResumoFinanceiro
-     */
     public List<Financeiro> listarPorPeriodo(String tipo, java.util.Date dataInicio, java.util.Date dataFim) {
         List<Financeiro> lista = new ArrayList<>();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -122,9 +141,6 @@ public class FinanceiroDAO {
         return lista;
     }
 
-    /**
-     * U - UPDATE (Atualizar / Editar)
-     */
     public boolean editar(Financeiro financeiro) {
         String sql = "UPDATE financeiro SET tipo = ?, categoria = ?, descricao = ?, valor = ? WHERE id_mov = ?";
 
@@ -145,9 +161,6 @@ public class FinanceiroDAO {
         }
     }
 
-    /**
-     * D - DELETE (Excluir)
-     */
     public boolean excluir(int idMov) {
         String sql = "DELETE FROM financeiro WHERE id_mov = ?";
 

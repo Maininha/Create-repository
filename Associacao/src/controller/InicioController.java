@@ -5,7 +5,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Date; // Import necessário para manipular as datas do banco
+import java.sql.Date;
 
 public class InicioController {
 
@@ -68,7 +68,7 @@ public class InicioController {
             stmt.setDouble(5, saldoFinal);
 
             int linhasAfetadas = stmt.executeUpdate();
-            return linhasAfetadas > 0; // Retorna true se salvou com sucesso
+            return linhasAfetadas > 0;
 
         } catch (SQLException e) {
             System.err.println("Erro ao cadastrar relatório no banco: " + e.getMessage());

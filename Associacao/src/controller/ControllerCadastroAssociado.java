@@ -61,10 +61,8 @@ public class ControllerCadastroAssociado {
             painelCadastro.getBtnVoltarLink().removeActionListener(al);
         }
 
-
         acaoCadastrar = e -> processarPrimeiraEtapa();
         acaoFinalizar = e -> finalizarCadastroGestor();
-
 
         acaoVoltar = e -> {
             if (telaCadastro != null && telaCadastro.getCard() != null) {
@@ -78,7 +76,6 @@ public class ControllerCadastroAssociado {
             }
         };
 
-
         painelCadastro.getBtnCadastrar().addActionListener(acaoCadastrar);
         painelSenha.getBtnFinalizar().addActionListener(acaoFinalizar);
         painelCadastro.getBtnVoltarLink().addActionListener(acaoVoltar);
@@ -89,13 +86,18 @@ public class ControllerCadastroAssociado {
         String cpfRaw = painelCadastro.getTxtCpf().getText().trim();
         String logradouro = painelCadastro.getTxtLogradouro().getText().trim();
         String city = painelCadastro.getTxtCidade().getText().trim();
-        String estado = painelCadastro.getTxtEstado().getText().trim();
+
+        // CORREÇÃO: Leitura do valor selecionado no JComboBox de UF
+        Object estadoSelecionado = painelCadastro.getCbEstado().getSelectedItem();
+        String estado = (estadoSelecionado != null) ? estadoSelecionado.toString().trim() : "";
+
         String referencia = painelCadastro.getTxtReferencia().getText().trim();
 
-        if (nome.isEmpty() || cpfRaw.isEmpty() || logradouro.isEmpty() || city.isEmpty() || estado.isEmpty()) {
+        // Validação de campos obrigatórios (apenas Nome e CPF mantidos como estritamente obrigatórios)
+        if (nome.isEmpty() || cpfRaw.isEmpty()) {
             JOptionPane.showMessageDialog(
                     telaCadastro,
-                    "Preencha todos os campos obrigatórios!",
+                    "Preencha todos os campos obrigatórios (Nome e CPF)!",
                     "Campos Vazios",
                     JOptionPane.WARNING_MESSAGE
             );
@@ -144,7 +146,6 @@ public class ControllerCadastroAssociado {
                 atualizarListagemTelas();
                 limparFormulario();
 
-                // 🛠️ CORREÇÃO: ID alterado aqui também para redirecionar corretamente após o sucesso
                 if (telaCadastro != null && telaCadastro.getCard() != null) {
                     telaCadastro.getCard().show(telaCadastro.getPainelConteudo(), "listarAssociados");
                     telaCadastro.alternarCorBotao(telaCadastro.getBtAssociados());
@@ -193,7 +194,6 @@ public class ControllerCadastroAssociado {
             painelSenha.getTxtConfirmarSenha().setText("");
 
             if (telaCadastro != null && telaCadastro.getCard() != null) {
-                // 🛠️ CORREÇÃO: ID alterado aqui também para fechar o fluxo do gestor
                 telaCadastro.getCard().show(telaCadastro.getPainelConteudo(), "listarAssociados");
                 telaCadastro.alternarCorBotao(telaCadastro.getBtAssociados());
                 telaCadastro.getPainelConteudo().revalidate();
@@ -211,13 +211,7 @@ public class ControllerCadastroAssociado {
     }
 
     private void limparFormulario() {
-        painelCadastro.getTxtNome().setText("");
-        painelCadastro.getTxtCpf().setText("");
-        painelCadastro.getTxtLogradouro().setText("");
-        painelCadastro.getTxtCidade().setText("");
-        painelCadastro.getTxtEstado().setText("");
-        painelCadastro.getTxtReferencia().setText("");
-        painelCadastro.getRbAssociado().setSelected(true);
+        painelCadastro.limparCampos(); // Utiliza o método de limpeza centralizado do painel
 
         nomeTemp = null;
         cpfTemp = null;
