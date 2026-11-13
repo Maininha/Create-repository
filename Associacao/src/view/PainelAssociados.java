@@ -61,13 +61,57 @@ public class PainelAssociados extends JPanel {
         painelSuperior.setLayout(new BoxLayout(painelSuperior, BoxLayout.Y_AXIS));
         painelSuperior.setOpaque(false);
 
+        // ==========================================
+        // CABEÇALHO COM BOTÃO VOLTAR E TÍTULO
+        // ==========================================
+        JPanel linhaTitulo = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        linhaTitulo.setOpaque(false);
+        linhaTitulo.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JButton btnVoltar = new JButton(criarIconeVoltar(COR_PRIMARIA));
+        btnVoltar.setPreferredSize(new Dimension(36, 36));
+        btnVoltar.setBackground(Color.WHITE);
+        btnVoltar.setFocusPainted(false);
+        btnVoltar.setBorder(BorderFactory.createLineBorder(new Color(220, 215, 208), 1, true));
+        btnVoltar.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnVoltar.setToolTipText("Voltar para a Tela Inicial");
+
+        btnVoltar.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                btnVoltar.setBackground(new Color(242, 236, 228));
+                btnVoltar.setBorder(BorderFactory.createLineBorder(COR_DESTAQUE, 1, true));
+            }
+            @Override
+            public void mouseExited(MouseEvent e) {
+                btnVoltar.setBackground(Color.WHITE);
+                btnVoltar.setBorder(BorderFactory.createLineBorder(new Color(220, 215, 208), 1, true));
+            }
+        });
+
+        btnVoltar.addActionListener(e -> {
+            Window window = SwingUtilities.getWindowAncestor(PainelAssociados.this);
+            if (window instanceof TelaPrincipal) {
+                TelaPrincipal tela = (TelaPrincipal) window;
+                tela.navegarPara("inicio", tela.getBtInicio());
+                PainelInicio.dispararAtualizacaoAutomatica();
+            }
+        });
+
         JLabel titulo = new JLabel("Gestão de Associados");
         titulo.setFont(new Font("Segoe UI", Font.BOLD, 26));
         titulo.setForeground(COR_PRIMARIA);
-        titulo.setAlignmentX(Component.LEFT_ALIGNMENT);
-        painelSuperior.add(titulo);
+
+        linhaTitulo.add(btnVoltar);
+        linhaTitulo.add(Box.createHorizontalStrut(14));
+        linhaTitulo.add(titulo);
+
+        painelSuperior.add(linhaTitulo);
         painelSuperior.add(Box.createVerticalStrut(15));
 
+        // ==========================================
+        // BARRA DE PESQUISA E BOTÕES DE AÇÃO
+        // ==========================================
         JPanel linhaComandos = new JPanel(new BorderLayout(15, 0));
         linhaComandos.setOpaque(false);
         linhaComandos.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -282,7 +326,6 @@ public class PainelAssociados extends JPanel {
                         if (listener != null) {
                             String nome = (String) modelo.getValueAt(modelRow, 0);
 
-                            // Opções personalizadas para o diálogo em Português
                             Object[] opcoes = {"Sim", "Não"};
 
                             int opt = JOptionPane.showOptionDialog(
@@ -293,10 +336,10 @@ public class PainelAssociados extends JPanel {
                                     JOptionPane.WARNING_MESSAGE,
                                     null,
                                     opcoes,
-                                    opcoes[1] // Mantém o "Não" focado por padrão
+                                    opcoes[1]
                             );
 
-                            if (opt == 0) { // 0 corresponde a "Sim"
+                            if (opt == 0) {
                                 listener.excluir(modelRow);
                                 atualizarEmptyState();
                             }
@@ -319,6 +362,34 @@ public class PainelAssociados extends JPanel {
         cardContainer.add(lbEmptyState, "empty");
 
         add(cardContainer, BorderLayout.CENTER);
+    }
+
+    // ==========================================
+    // ÍCONE VETORIAL DE VOLTAR (SETA PARA ESQUERDA)
+    // ==========================================
+    private Icon criarIconeVoltar(Color cor) {
+        return new Icon() {
+            @Override
+            public void paintIcon(Component c, Graphics g, int x, int y) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(cor);
+                g2.setStroke(new BasicStroke(2.2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+                int centroY = y + getIconHeight() / 2;
+                g2.drawLine(x + 9, centroY - 5, x + 4, centroY);
+                g2.drawLine(x + 4, centroY, x + 9, centroY + 5);
+                g2.drawLine(x + 5, centroY, x + 15, centroY);
+
+                g2.dispose();
+            }
+
+            @Override
+            public int getIconWidth() { return 18; }
+
+            @Override
+            public int getIconHeight() { return 18; }
+        };
     }
 
     private void estilizarBotaoPrimario(JButton btn) {

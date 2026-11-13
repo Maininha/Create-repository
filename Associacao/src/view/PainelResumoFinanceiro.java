@@ -5,6 +5,8 @@ import javax.swing.border.LineBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -36,6 +38,7 @@ public class PainelResumoFinanceiro extends JPanel {
     private final Color COR_VERDE = new Color(34, 139, 34);
     private final Color COR_VERMELHO = new Color(178, 34, 34);
     private final Color COR_TEXTO_PADRAO = new Color(35, 18, 4);
+    private final Color COR_DESTAQUE = new Color(185, 120, 30);
 
     public PainelResumoFinanceiro() {
         instanciaAtiva = this;
@@ -60,16 +63,48 @@ public class PainelResumoFinanceiro extends JPanel {
         JPanel abaFin = new JPanel(null);
         abaFin.setBackground(new Color(248, 245, 240));
 
-        // Cabecalho
+        // ==========================================
+        // CABEÇALHO COM BOTÃO VOLTAR
+        // ==========================================
+        JButton btnVoltar = new JButton(criarIconeVoltar(COR_TEXTO_PADRAO));
+        btnVoltar.setBounds(40, 27, 36, 36);
+        btnVoltar.setBackground(Color.WHITE);
+        btnVoltar.setFocusPainted(false);
+        btnVoltar.setBorder(BorderFactory.createLineBorder(new Color(220, 215, 208), 1, true));
+        btnVoltar.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnVoltar.setToolTipText("Voltar para a Tela Inicial");
+
+        btnVoltar.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                btnVoltar.setBackground(new Color(242, 236, 228));
+                btnVoltar.setBorder(BorderFactory.createLineBorder(COR_DESTAQUE, 1, true));
+            }
+            @Override
+            public void mouseExited(MouseEvent e) {
+                btnVoltar.setBackground(Color.WHITE);
+                btnVoltar.setBorder(BorderFactory.createLineBorder(new Color(220, 215, 208), 1, true));
+            }
+        });
+
+        btnVoltar.addActionListener(e -> {
+            TelaPrincipal tela = (TelaPrincipal) SwingUtilities.getWindowAncestor(PainelResumoFinanceiro.this);
+            if (tela != null) {
+                tela.navegarPara("inicio", tela.getBtInicio());
+                PainelInicio.dispararAtualizacaoAutomatica();
+            }
+        });
+        abaFin.add(btnVoltar);
+
         JLabel titulo = new JLabel("Resumo Financeiro");
         titulo.setFont(new Font("Segoe UI", Font.BOLD, 30));
         titulo.setForeground(new Color(70, 40, 15));
-        titulo.setBounds(40, 25, 400, 40);
+        titulo.setBounds(90, 25, 400, 40);
         abaFin.add(titulo);
 
         JLabel subtitulo = new JLabel("Visualize indicadores e movimentações financeiras.");
         subtitulo.setForeground(Color.GRAY);
-        subtitulo.setBounds(40, 60, 400, 20);
+        subtitulo.setBounds(90, 60, 400, 20);
         abaFin.add(subtitulo);
 
         // Filtro de Periodo e Acoes
@@ -378,6 +413,34 @@ public class PainelResumoFinanceiro extends JPanel {
         }
 
         return tabela;
+    }
+
+    // ==========================================
+    // ÍCONE VETORIAL DE VOLTAR (SETA PARA ESQUERDA)
+    // ==========================================
+    private Icon criarIconeVoltar(Color cor) {
+        return new Icon() {
+            @Override
+            public void paintIcon(Component c, Graphics g, int x, int y) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(cor);
+                g2.setStroke(new BasicStroke(2.2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+                int centroY = y + getIconHeight() / 2;
+                g2.drawLine(x + 9, centroY - 5, x + 4, centroY);
+                g2.drawLine(x + 4, centroY, x + 9, centroY + 5);
+                g2.drawLine(x + 5, centroY, x + 15, centroY);
+
+                g2.dispose();
+            }
+
+            @Override
+            public int getIconWidth() { return 18; }
+
+            @Override
+            public int getIconHeight() { return 18; }
+        };
     }
 
     private class ScrollBarProfissionalUI extends BasicScrollBarUI {

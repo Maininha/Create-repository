@@ -10,6 +10,8 @@ import javax.swing.text.MaskFormatter;
 import java.awt.*;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -29,16 +31,66 @@ public class PainelNovaMovimentacao extends JPanel {
     private final String PLACEHOLDER_DESC = "Ex: Doação de insumos ou pagamento de taxa de associado...";
     private final Color COR_OBRIGATORIO = new Color(211, 47, 47);
     private final Color COR_TEXTO_PADRAO = new Color(35, 18, 4);
+    private final Color COR_DESTAQUE = new Color(185, 120, 30);
 
     public PainelNovaMovimentacao() {
 
         setLayout(null);
         setBackground(new Color(248, 245, 240));
 
+        // ==========================================
+        // CABEÇALHO COM BOTÃO VOLTAR
+        // ==========================================
+        JButton btnVoltar = new JButton(criarIconeVoltar(COR_TEXTO_PADRAO));
+        btnVoltar.setBounds(40, 22, 36, 36);
+        btnVoltar.setBackground(Color.WHITE);
+        btnVoltar.setFocusPainted(false);
+        btnVoltar.setBorder(BorderFactory.createLineBorder(new Color(220, 215, 208), 1, true));
+        btnVoltar.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnVoltar.setToolTipText("Voltar para o Financeiro");
+
+        btnVoltar.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                btnVoltar.setBackground(new Color(242, 236, 228));
+                btnVoltar.setBorder(BorderFactory.createLineBorder(COR_DESTAQUE, 1, true));
+            }
+            @Override
+            public void mouseExited(MouseEvent e) {
+                btnVoltar.setBackground(Color.WHITE);
+                btnVoltar.setBorder(BorderFactory.createLineBorder(new Color(220, 215, 208), 1, true));
+            }
+        });
+
+        btnVoltar.addActionListener(e -> {
+            boolean temDadosDigitados = (!area.getText().trim().isEmpty() && !area.getText().equals(PLACEHOLDER_DESC))
+                    || !txtValor.getText().trim().isEmpty();
+
+            if (temDadosDigitados) {
+                Object[] opcoes = {"Sim", "Não"};
+                int resposta = JOptionPane.showOptionDialog(
+                        this,
+                        "Deseja realmente voltar? Os dados não salvos serão perdidos.",
+                        "Confirmar Saída",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.QUESTION_MESSAGE,
+                        null,
+                        opcoes,
+                        opcoes[1]
+                );
+                if (resposta == 0) {
+                    limparCamposERetornar();
+                }
+            } else {
+                limparCamposERetornar();
+            }
+        });
+        add(btnVoltar);
+
         titulo = new JLabel("Nova movimentação");
         titulo.setFont(new Font("Segoe UI", Font.BOLD, 30));
         titulo.setForeground(new Color(70, 40, 15));
-        titulo.setBounds(40, 20, 400, 40);
+        titulo.setBounds(90, 20, 400, 40);
         add(titulo);
 
         // ------------------ TIPO MOVIMENTAÇÃO ------------------
@@ -188,7 +240,7 @@ public class PainelNovaMovimentacao extends JPanel {
         // ------------------ BOTÕES DE AÇÃO ------------------
         JButton salvar = new JButton("Salvar");
         salvar.setBounds(40, 430, 140, 45);
-        salvar.setBackground(new Color(185, 120, 30));
+        salvar.setBackground(COR_DESTAQUE);
         salvar.setForeground(Color.WHITE);
         salvar.setFocusPainted(false);
         salvar.setBorderPainted(false);
@@ -243,7 +295,6 @@ public class PainelNovaMovimentacao extends JPanel {
         });
 
         cancelar.addActionListener(e -> {
-            // Opções personalizadas em Português
             Object[] opcoes = {"Sim", "Não"};
 
             int resposta = JOptionPane.showOptionDialog(
@@ -254,13 +305,41 @@ public class PainelNovaMovimentacao extends JPanel {
                     JOptionPane.QUESTION_MESSAGE,
                     null,
                     opcoes,
-                    opcoes[1] // Mantém o "Não" focado por padrão
+                    opcoes[1]
             );
 
-            if (resposta == 0) { // 0 corresponde à opção "Sim"
+            if (resposta == 0) {
                 limparCamposERetornar();
             }
         });
+    }
+
+    // ==========================================
+    // ÍCONE VETORIAL DE VOLTAR (SETA PARA ESQUERDA)
+    // ==========================================
+    private Icon criarIconeVoltar(Color cor) {
+        return new Icon() {
+            @Override
+            public void paintIcon(Component c, Graphics g, int x, int y) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(cor);
+                g2.setStroke(new BasicStroke(2.2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+                int centroY = y + getIconHeight() / 2;
+                g2.drawLine(x + 9, centroY - 5, x + 4, centroY);
+                g2.drawLine(x + 4, centroY, x + 9, centroY + 5);
+                g2.drawLine(x + 5, centroY, x + 15, centroY);
+
+                g2.dispose();
+            }
+
+            @Override
+            public int getIconWidth() { return 18; }
+
+            @Override
+            public int getIconHeight() { return 18; }
+        };
     }
 
     private JLabel criarLabelComObrigatorio(String texto, int x, int y, int width, int height) {

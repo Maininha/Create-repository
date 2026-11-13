@@ -43,18 +43,48 @@ public class PainelFinanceiro extends JPanel {
         setBackground(new Color(248, 245, 240));
 
         // ==========================================
-        // CABEÇALHO
+        // CABEÇALHO COM BOTÃO VOLTAR
         // ==========================================
+        JButton btnVoltar = new JButton(criarIconeVoltar(COR_PRIMARIA));
+        btnVoltar.setBounds(40, 22, 36, 36);
+        btnVoltar.setBackground(Color.WHITE);
+        btnVoltar.setFocusPainted(false);
+        btnVoltar.setBorder(BorderFactory.createLineBorder(new Color(220, 215, 208), 1, true));
+        btnVoltar.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnVoltar.setToolTipText("Voltar para a Tela Inicial");
+
+        btnVoltar.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                btnVoltar.setBackground(new Color(242, 236, 228));
+                btnVoltar.setBorder(BorderFactory.createLineBorder(COR_DESTAQUE, 1, true));
+            }
+            @Override
+            public void mouseExited(MouseEvent e) {
+                btnVoltar.setBackground(Color.WHITE);
+                btnVoltar.setBorder(BorderFactory.createLineBorder(new Color(220, 215, 208), 1, true));
+            }
+        });
+
+        btnVoltar.addActionListener(e -> {
+            TelaPrincipal tela = (TelaPrincipal) SwingUtilities.getWindowAncestor(PainelFinanceiro.this);
+            if (tela != null) {
+                tela.navegarPara("inicio", tela.getBtInicio());
+                PainelInicio.dispararAtualizacaoAutomatica();
+            }
+        });
+        add(btnVoltar);
+
         JLabel titulo = new JLabel("Financeiro");
         titulo.setFont(new Font("Segoe UI", Font.BOLD, 28));
         titulo.setForeground(new Color(70, 40, 15));
-        titulo.setBounds(40, 20, 300, 35);
+        titulo.setBounds(90, 20, 300, 35);
         add(titulo);
 
         JLabel subtitulo = new JLabel("Consulte as movimentações financeiras.");
         subtitulo.setForeground(Color.GRAY);
         subtitulo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        subtitulo.setBounds(40, 52, 400, 20);
+        subtitulo.setBounds(90, 52, 400, 20);
         add(subtitulo);
 
         // ==========================================
@@ -224,9 +254,10 @@ public class PainelFinanceiro extends JPanel {
             tabela.getColumnModel().getColumn(i).setCellRenderer(centralizado);
         }
 
-        // Renderizador da coluna de Ações
+        // Renderizador da coluna de Ações com largura mínima garantida
         tabela.getColumnModel().getColumn(6).setCellRenderer(new AcoesRenderer());
-        tabela.getColumnModel().getColumn(6).setPreferredWidth(100);
+        tabela.getColumnModel().getColumn(6).setMinWidth(145);
+        tabela.getColumnModel().getColumn(6).setPreferredWidth(155);
 
         tabela.setRowHeight(45);
         tabela.setFont(new Font("Segoe UI", Font.PLAIN, 14));
@@ -237,20 +268,22 @@ public class PainelFinanceiro extends JPanel {
         tabela.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
         tabela.getTableHeader().setPreferredSize(new Dimension(0, 40));
 
-        // Menu de Contexto (Botão Direito)
+        // Menu de Contexto (Botão Direito) com ícones vetoriais
         JPopupMenu popupMenu = new JPopupMenu();
         popupMenu.setBackground(Color.WHITE);
         popupMenu.setBorder(BorderFactory.createLineBorder(COR_DESTAQUE, 1));
 
-        JMenuItem menuEditar = new JMenuItem("✏️  Editar Registro");
+        JMenuItem menuEditar = new JMenuItem("Editar Registro", criarIconeEditar(COR_DESTAQUE));
         menuEditar.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         menuEditar.setBackground(Color.WHITE);
         menuEditar.setForeground(new Color(70, 40, 15));
+        menuEditar.setIconTextGap(8);
 
-        JMenuItem menuExcluir = new JMenuItem("🗑️  Excluir Registro");
+        JMenuItem menuExcluir = new JMenuItem("Excluir Registro", criarIconeExcluir(COR_VERMELHO));
         menuExcluir.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         menuExcluir.setBackground(Color.WHITE);
-        menuExcluir.setForeground(COR_DESTAQUE);
+        menuExcluir.setForeground(COR_VERMELHO);
+        menuExcluir.setIconTextGap(8);
 
         JSeparator divisor = new JSeparator();
         divisor.setForeground(new Color(240, 240, 240));
@@ -478,6 +511,95 @@ public class PainelFinanceiro extends JPanel {
     }
 
     // ==========================================
+    // ÍCONES VETORIAIS (VOLTAR, EDITAR, EXCLUIR)
+    // ==========================================
+    private Icon criarIconeVoltar(Color cor) {
+        return new Icon() {
+            @Override
+            public void paintIcon(Component c, Graphics g, int x, int y) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(cor);
+                g2.setStroke(new BasicStroke(2.2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+                int centroY = y + getIconHeight() / 2;
+                g2.drawLine(x + 9, centroY - 5, x + 4, centroY);
+                g2.drawLine(x + 4, centroY, x + 9, centroY + 5);
+                g2.drawLine(x + 5, centroY, x + 15, centroY);
+
+                g2.dispose();
+            }
+
+            @Override
+            public int getIconWidth() { return 18; }
+
+            @Override
+            public int getIconHeight() { return 18; }
+        };
+    }
+
+    private Icon criarIconeEditar(Color cor) {
+        return new Icon() {
+            @Override
+            public void paintIcon(Component c, Graphics g, int x, int y) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(cor);
+                g2.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+                g2.drawPolygon(
+                        new int[]{x + 3, x + 10, x + 12, x + 5},
+                        new int[]{y + 10, y + 3, y + 5, y + 12},
+                        4
+                );
+                g2.drawLine(x + 3, y + 10, x + 2, y + 13);
+                g2.drawLine(x + 2, y + 13, x + 5, y + 12);
+
+                g2.dispose();
+            }
+
+            @Override
+            public int getIconWidth() { return 15; }
+
+            @Override
+            public int getIconHeight() { return 15; }
+        };
+    }
+
+    private Icon criarIconeExcluir(Color cor) {
+        return new Icon() {
+            @Override
+            public void paintIcon(Component c, Graphics g, int x, int y) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(cor);
+                g2.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+                g2.drawLine(x + 2, y + 4, x + 13, y + 4);
+                g2.drawLine(x + 5, y + 2, x + 10, y + 2);
+                g2.drawLine(x + 5, y + 2, x + 5, y + 4);
+                g2.drawLine(x + 10, y + 2, x + 10, y + 4);
+
+                g2.drawPolyline(
+                        new int[]{x + 4, x + 4, x + 11, x + 11},
+                        new int[]{y + 4, y + 13, y + 13, y + 4},
+                        4
+                );
+                g2.drawLine(x + 6, y + 7, x + 6, y + 11);
+                g2.drawLine(x + 9, y + 7, x + 9, y + 11);
+
+                g2.dispose();
+            }
+
+            @Override
+            public int getIconWidth() { return 15; }
+
+            @Override
+            public int getIconHeight() { return 15; }
+        };
+    }
+
+    // ==========================================
     // RENDERIZADORES AUXILIARES
     // ==========================================
     private class AcoesRenderer extends JPanel implements TableCellRenderer {
@@ -485,21 +607,31 @@ public class PainelFinanceiro extends JPanel {
         private final JLabel btnExcluir = new JLabel("Excluir");
 
         public AcoesRenderer() {
-            setLayout(new FlowLayout(FlowLayout.CENTER, 6, 8));
+            setLayout(new FlowLayout(FlowLayout.CENTER, 6, 13));
             setOpaque(true);
 
             btnEditar.setFont(new Font("Segoe UI", Font.BOLD, 12));
             btnEditar.setForeground(COR_DESTAQUE);
+            btnEditar.setIcon(criarIconeEditar(COR_DESTAQUE));
+            btnEditar.setIconTextGap(4);
 
             JLabel divisor = new JLabel("|");
             divisor.setForeground(new Color(210, 205, 195));
 
             btnExcluir.setFont(new Font("Segoe UI", Font.BOLD, 12));
             btnExcluir.setForeground(COR_VERMELHO);
+            btnExcluir.setIcon(criarIconeExcluir(COR_VERMELHO));
+            btnExcluir.setIconTextGap(4);
 
             add(btnEditar);
             add(divisor);
             add(btnExcluir);
+        }
+
+        @Override
+        public void setBounds(int x, int y, int width, int height) {
+            super.setBounds(x, y, width, height);
+            doLayout();
         }
 
         @Override
